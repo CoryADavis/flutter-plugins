@@ -47,17 +47,26 @@ class HealthFactory {
   ///   with a READ or READ_WRITE access.
   ///
   ///   On Android, this function returns true or false, depending on whether the specified access right has been granted.
-  static Future<bool?> hasPermissions(List<HealthDataType> types,
+  static Future<bool?> hasPermissions(
+      List<HealthDataType> types, bool isDataFromHealthConnect,
       {List<HealthDataAccess>? permissions}) async {
     if (permissions != null && permissions.length != types.length)
       throw ArgumentError(
           "The lists of types and permissions must be of same length.");
-
     final mTypes = List<HealthDataType>.from(types, growable: true);
     final mPermissions = permissions == null
         ? List<int>.filled(types.length, HealthDataAccess.READ.index,
             growable: true)
         : permissions.map((permission) => permission.index).toList();
+
+    if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
+      var value =  await _channel.invokeMethod('hasPermissionsHealthConnect', {
+        "types": mTypes.map((type) => _enumToString(type)).toList(),
+        "permissions": mPermissions,
+      });
+      print(value);
+      return false;
+    }
 
     /// On Android, if BMI is requested, then also ask for weight and height
     if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);

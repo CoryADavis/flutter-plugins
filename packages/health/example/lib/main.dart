@@ -23,6 +23,8 @@ enum AppState {
 }
 
 class _HealthAppState extends State<HealthApp> {
+  bool isDataFromHealthConnect = false;
+
   List<HealthDataPoint> _healthDataList = [];
   AppState _state = AppState.DATA_NOT_FETCHED;
   int _nofSteps = 10;
@@ -102,13 +104,32 @@ class _HealthAppState extends State<HealthApp> {
     _nofSteps = Random().nextInt(10);
     final types = [HealthDataType.STEPS, HealthDataType.BLOOD_GLUCOSE];
     final rights = [HealthDataAccess.WRITE, HealthDataAccess.WRITE];
+
+    final typesHealthConnect = [
+      HealthDataType.BODYFAT,
+      HealthDataType.NUTRITION,
+      HealthDataType.WEIGHT
+    ];
+
+    final rightsHealthConnect = [
+      HealthDataAccess.WRITE,
+      HealthDataAccess.WRITE,
+      HealthDataAccess.WRITE,
+    ];
+
     final permissions = [
       HealthDataAccess.READ_WRITE,
       HealthDataAccess.READ_WRITE
     ];
-    bool? hasPermissions =
-        await HealthFactory.hasPermissions(types, permissions: rights);
-    if (hasPermissions == false) {
+
+    bool? hasPermissions = await HealthFactory.hasPermissions(
+        isDataFromHealthConnect ? typesHealthConnect : types,
+        isDataFromHealthConnect,
+        permissions: isDataFromHealthConnect ? rightsHealthConnect : rights);
+    if (hasPermissions == null) {
+      print("Null When Select Health Connect");
+    }
+    if (hasPermissions == false && !isDataFromHealthConnect) {
       await health.requestAuthorization(types, permissions: permissions);
     }
 
@@ -238,7 +259,7 @@ class _HealthAppState extends State<HealthApp> {
     return MaterialApp(
       home: Scaffold(
           appBar: AppBar(
-            title: const Text('Health Example'),
+            title: const Text('Health'),
             actions: <Widget>[
               IconButton(
                 icon: Icon(Icons.file_download),
@@ -260,8 +281,29 @@ class _HealthAppState extends State<HealthApp> {
               )
             ],
           ),
-          body: Center(
-            child: _content(),
+          body: Stack(
+            children: [
+              Center(
+                child: _content(),
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Android Data from Health Connect"),
+                    Checkbox(
+                        value: isDataFromHealthConnect,
+                        onChanged: (value) {
+                          isDataFromHealthConnect = value ?? false;
+                          setState(() {});
+                        }),
+                  ],
+                ),
+              )
+            ],
           )),
     );
   }
