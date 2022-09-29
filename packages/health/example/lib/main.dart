@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 
 void main() => runApp(HealthApp());
 
@@ -127,7 +129,7 @@ class _HealthAppState extends State<HealthApp> {
         isDataFromHealthConnect,
         permissions: isDataFromHealthConnect ? rightsHealthConnect : rights);
     if (hasPermissions == null) {
-      print("Null When Select Health Connect");
+      print("Health Connect not installed ");
     }
     if (hasPermissions == false && !isDataFromHealthConnect) {
       await health.requestAuthorization(types, permissions: permissions);

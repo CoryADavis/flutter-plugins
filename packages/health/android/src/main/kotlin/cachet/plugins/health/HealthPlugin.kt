@@ -40,6 +40,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
+import androidx.activity.*;
+import io.flutter.embedding.android.FlutterActivity
 
 const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1111
 const val CHANNEL_NAME = "flutter_health"
@@ -551,8 +553,12 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             return
         }
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
-        mResult = result
         val permissionList = callToHealthConnectTypes(call)
+        /*val intent = healthConnectClient.permissionController.createRequestPermissionActivityContract()
+            .createIntent(activity!!.applicationContext, permissionList)
+
+        activity!!.startActivityForResult(intent,1111)*/
+        mResult = result
 
         checkAvailability()
 
@@ -561,11 +567,11 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             return
         }
 
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.Main).launch {
             mResult?.success(
                 healthConnectClient.permissionController.getGrantedPermissions(
                     permissionList.toSet()
-                )
+                ).toString()
             )
         }
     }

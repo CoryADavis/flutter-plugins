@@ -60,12 +60,16 @@ class HealthFactory {
         : permissions.map((permission) => permission.index).toList();
 
     if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
-      var value =  await _channel.invokeMethod('hasPermissionsHealthConnect', {
-        "types": mTypes.map((type) => _enumToString(type)).toList(),
-        "permissions": mPermissions,
-      });
-      print(value);
-      return false;
+      try {
+        var value = await _channel.invokeMethod('hasPermissionsHealthConnect', {
+          "types": mTypes.map((type) => _enumToString(type)).toList(),
+          "permissions": mPermissions,
+        });
+        print(value);
+        return false;
+      } on PlatformException catch (e) {
+        return null;
+      }
     }
 
     /// On Android, if BMI is requested, then also ask for weight and height
