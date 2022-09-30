@@ -6,7 +6,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 
-void main() => runApp(HealthApp());
+void main() => runApp(MaterialApp(home: HealthApp()));
 
 class HealthApp extends StatefulWidget {
   @override
@@ -189,7 +189,7 @@ class _HealthAppState extends State<HealthApp> {
     }
   }
 
-  String finalWeightValue = "";
+  List<HealthConnectWeight> healthWeight = [];
 
   Future readWeightDataFromHealthConnect() async {
     var type = HealthDataType.WEIGHT;
@@ -197,14 +197,25 @@ class _HealthAppState extends State<HealthApp> {
     final endTime = DateTime.now();
     List<dynamic> success =
         await health.getHealthConnectData(startTime, endTime, type);
-    finalWeightValue = "";
+    healthWeight = [];
     if (type == HealthDataType.WEIGHT) {
-      success.forEach((element) {
+      /*success.forEach((element) {
         var data = (element as HealthConnectWeight);
         finalWeightValue =
             "uID : ${element.uID}, dateTime : ${element.zonedDateTime}, weight: ${data.weight}\n\n" +
                 finalWeightValue;
-      });
+      });*/
+      healthWeight = success as List<HealthConnectWeight>;
+      setState(() {});
+    }
+  }
+
+  Future deleteWeightDataFromHealthConnect(String uID) async {
+    var type = HealthDataType.WEIGHT;
+
+    bool success = await health.deleteHealthConnectData(type, uID);
+    if (success) {
+      healthWeight.removeWhere((element) => element.uID == uID);
       setState(() {});
     }
   }
@@ -344,9 +355,9 @@ class _HealthAppState extends State<HealthApp> {
             ],
           ),
           body: Stack(
+            fit: StackFit.expand,
             children: [
-              Center(
-                //child: _content(),
+              SingleChildScrollView(
                 child: Column(
                   children: [
                     ElevatedButton(
@@ -365,10 +376,48 @@ class _HealthAppState extends State<HealthApp> {
                           readWeightDataFromHealthConnect();
                         },
                         child: Text("Read Weight from Health Connect")),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(finalWeightValue),
-                    )
+                    ListView.builder(
+                        itemCount: healthWeight.length,
+                        shrinkWrap: true,
+                        itemBuilder: (_, index) {
+                          HealthConnectWeight data = healthWeight[index];
+                          return ListTile(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text(
+                                        "Are you sure you want delete entry?"),
+                                    actions: [
+                                      TextButton(
+                                        child: Text("Delete"),
+                                        onPressed: () {
+                                          Navigator.of(context)
+                                              .pop(); // dismiss dialog
+                                          deleteWeightDataFromHealthConnect(
+                                              data.uID);
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: Text("Cancel"),
+                                        onPressed: () {
+                                          Navigator.of(context)
+                                              .pop(); // dismiss dialog
+                                          deleteWeightDataFromHealthConnect(
+                                              data.uID);
+                                        },
+                                      )
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            title: Text("Weight: ${data.weight}"),
+                            subtitle: Text(
+                                'DateTime ${data.zonedDateTime}\nuID ${data.uID}'),
+                          );
+                        }),
                   ],
                 ),
               ),
@@ -377,17 +426,20 @@ class _HealthAppState extends State<HealthApp> {
                       bottom: 0,
                       left: 0,
                       right: 0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("Android Data from Health Connect"),
-                          Checkbox(
-                              value: isDataFromHealthConnect,
-                              onChanged: (value) {
-                                isDataFromHealthConnect = value ?? false;
-                                setState(() {});
-                              }),
-                        ],
+                      child: Container(
+                        color: Colors.white,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("Android Data from Health Connect"),
+                            Checkbox(
+                                value: isDataFromHealthConnect,
+                                onChanged: (value) {
+                                  isDataFromHealthConnect = value ?? false;
+                                  setState(() {});
+                                }),
+                          ],
+                        ),
                       ),
                     )
                   : Container()

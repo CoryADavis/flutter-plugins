@@ -383,6 +383,26 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
+    private fun deleteHealthConnectData(call: MethodCall, result: Result) {
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        val type = call.argument<String>("dataTypeKey")!!
+        val uID = call.argument<String>("uID")!!
+        if (type == WEIGHT) {
+            CoroutineScope(Dispatchers.Main).launch {
+                healthConnectClient.deleteRecords(
+                    WeightRecord::class,
+                    uidsList = listOf(uID),
+                    clientRecordIdsList = emptyList()
+                )
+                result.success(true)
+            }
+        }
+    }
+
     private fun dateTimeWithOffsetOrDefault(time: Instant, offset: ZoneOffset?): ZonedDateTime =
         if (offset != null) {
             ZonedDateTime.ofInstant(time, offset)
@@ -825,6 +845,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "hasPermissionsHealthConnect" -> hasPermissionHealthConnect(call, result)
             "writeDataHealthConnect" -> writeDataHealthConnect(call, result)
             "getHealthConnectData" -> getHealthConnectData(call, result)
+            "deleteHealthConnectData" -> deleteHealthConnectData(call, result)
             else -> result.notImplemented()
         }
     }

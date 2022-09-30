@@ -258,6 +258,20 @@ class HealthFactory {
     return [];
   }
 
+  Future<bool> deleteHealthConnectData(HealthDataType type, String uID) async {
+    if (type == HealthDataType.WEIGHT) {
+      if (uID.isEmpty)
+        throw ArgumentError("startTime must be equal or earlier than endTime");
+      Map<String, dynamic> args = {
+        'dataTypeKey': _enumToString(type),
+        'uID': uID
+      };
+      var success = await _channel.invokeMethod('deleteHealthConnectData', args);
+      return success ?? false;
+    }
+    return false;
+  }
+
   /// Fetch a list of health data points based on [types].
   Future<List<HealthDataPoint>> getHealthDataFromTypes(
     DateTime startDate,
