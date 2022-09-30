@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
 
 void main() => runApp(HealthApp());
 
@@ -135,18 +135,78 @@ class _HealthAppState extends State<HealthApp> {
       await health.requestAuthorization(types, permissions: permissions);
     }
 
-    _mgdl = Random().nextInt(10) * 1.0;
-    bool success = await health.writeHealthData(
-        _nofSteps.toDouble(), HealthDataType.STEPS, earlier, now);
+    if (!isDataFromHealthConnect) {
+      _mgdl = Random().nextInt(10) * 1.0;
+      bool success = await health.writeHealthData(
+          isDataFromHealthConnect, HealthDataType.STEPS,
+          value: _nofSteps.toDouble(), startTime: earlier, endTime: now);
 
-    if (success) {
-      success = await health.writeHealthData(
-          _mgdl, HealthDataType.BLOOD_GLUCOSE, now, now);
+      if (success) {
+        success = await health.writeHealthData(
+            isDataFromHealthConnect, HealthDataType.BLOOD_GLUCOSE,
+            value: _mgdl, startTime: now, endTime: now);
+      }
+
+      setState(() {
+        _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
+      });
+    } else {
+      bool success = await health.writeHealthData(
+          isDataFromHealthConnect, HealthDataType.WEIGHT,
+          value: 100.toDouble(), currentTime: now);
+
+      Fluttertoast.showToast(
+          msg: success ? "Data Added" : "Something went wrong",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      /*setState(() {
+        _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
+      });*/
     }
+  }
 
-    setState(() {
-      _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
-    });
+  Future addWeightDataToHealthConnect() async {
+    final now = DateTime.now();
+    bool success = await health.writeHealthData(
+        isDataFromHealthConnect, HealthDataType.WEIGHT,
+        value: 100.toDouble(), currentTime: now);
+
+    Fluttertoast.showToast(
+        msg: success ? "Data Added" : "Something went wrong",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0);
+    if (success) {
+      await Future.delayed(Duration(milliseconds: 700));
+      readWeightDataFromHealthConnect();
+    }
+  }
+
+  String finalWeightValue = "";
+
+  Future readWeightDataFromHealthConnect() async {
+    var type = HealthDataType.WEIGHT;
+    final startTime = DateTime.now().subtract(Duration(minutes: 100));
+    final endTime = DateTime.now();
+    List<dynamic> success =
+        await health.getHealthConnectData(startTime, endTime, type);
+    finalWeightValue = "";
+    if (type == HealthDataType.WEIGHT) {
+      success.forEach((element) {
+        var data = (element as HealthConnectWeight);
+        finalWeightValue =
+            "uID : ${element.uID}, dateTime : ${element.zonedDateTime}, weight: ${data.weight}\n\n" +
+                finalWeightValue;
+      });
+      setState(() {});
+    }
   }
 
   /// Fetch steps from the health plugin and show them in the app.
@@ -263,7 +323,7 @@ class _HealthAppState extends State<HealthApp> {
           appBar: AppBar(
             title: const Text('Health'),
             actions: <Widget>[
-              IconButton(
+              /*IconButton(
                 icon: Icon(Icons.file_download),
                 onPressed: () {
                   fetchData();
@@ -280,31 +340,57 @@ class _HealthAppState extends State<HealthApp> {
                   fetchStepData();
                 },
                 icon: Icon(Icons.nordic_walking),
-              )
+              )*/
             ],
           ),
           body: Stack(
             children: [
               Center(
-                child: _content(),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                //child: _content(),
+                child: Column(
                   children: [
-                    Text("Android Data from Health Connect"),
-                    Checkbox(
-                        value: isDataFromHealthConnect,
-                        onChanged: (value) {
-                          isDataFromHealthConnect = value ?? false;
-                          setState(() {});
-                        }),
+                    ElevatedButton(
+                        onPressed: () {
+                          if (isDataFromHealthConnect) {
+                            addWeightDataToHealthConnect();
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text("Weight added to Health Connect")),
+                    ElevatedButton(
+                        onPressed: () {
+                          readWeightDataFromHealthConnect();
+                        },
+                        child: Text("Read Weight from Health Connect")),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(finalWeightValue),
+                    )
                   ],
                 ),
-              )
+              ),
+              Platform.isAndroid
+                  ? Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("Android Data from Health Connect"),
+                          Checkbox(
+                              value: isDataFromHealthConnect,
+                              onChanged: (value) {
+                                isDataFromHealthConnect = value ?? false;
+                                setState(() {});
+                              }),
+                        ],
+                      ),
+                    )
+                  : Container()
             ],
           )),
     );

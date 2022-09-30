@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   intl: ^0.17.0
   device_info_plus: ^3.1.0
-  android_intent_plus: ^3.1.1+1
 
 dev_dependencies:
   flutter_test:

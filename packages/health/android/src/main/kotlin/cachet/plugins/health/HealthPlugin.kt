@@ -1,5 +1,6 @@
 package cachet.plugins.health
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
@@ -9,9 +10,14 @@ import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.NonNull
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.impl.converters.permission.toProtoPermission
 import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.*
+import androidx.health.connect.client.records.BodyFatRecord
+import androidx.health.connect.client.records.NutritionRecord
+import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Mass
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
@@ -34,14 +40,18 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
-import androidx.activity.*;
-import io.flutter.embedding.android.FlutterActivity
 
 const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1111
 const val CHANNEL_NAME = "flutter_health"
@@ -298,6 +308,97 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
+    @SuppressLint("SimpleDateFormat")
+    private fun writeDataHealthConnect(call: MethodCall, result: Result) {
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        val type = call.argument<String>("dataTypeKey")!!
+        val currentTime = call.argument<String>("currentTime")!!
+        val value = call.argument<Float>("value")!!
+
+        if (type == WEIGHT) {
+            val time = ZonedDateTime.parse(
+                currentTime,
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            );
+            val weight = WeightRecord(
+                weight = Mass.kilograms(value.toDouble()),
+                time = time.toInstant(),
+                zoneOffset = time.offset
+            )
+            val records = listOf(weight)
+            CoroutineScope(Dispatchers.Main).launch {
+                healthConnectClient.insertRecords(records)
+                result.success(true)
+            }
+        }
+    }
+
+    private fun getHealthConnectData(call: MethodCall, result: Result) {
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        val type = call.argument<String>("dataTypeKey")!!
+        val startDate = call.argument<String>("startDate")!!
+        val endDate = call.argument<String>("endDate")!!
+        if (type == WEIGHT) {
+            val startDate = ZonedDateTime.parse(
+                startDate,
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val endDate = ZonedDateTime.parse(
+                endDate,
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val request = ReadRecordsRequest(
+                recordType = WeightRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(
+                    startDate.toInstant(),
+                    endDate.toInstant()
+                )
+            )
+            CoroutineScope(Dispatchers.Main).launch {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<WeightRecord> = response.records;
+
+                val healthData = dataList.mapIndexed { _, it ->
+                    val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                    val zonedDateTime =
+                        dateTimeWithOffsetOrDefault(it.time, it.zoneOffset)
+                    val uid = it.metadata.uid
+                    val weight = it.weight
+                    return@mapIndexed hashMapOf(
+                        "zonedDateTime" to formatter.format(zonedDateTime),
+                        "uid" to uid,
+                        "weight" to "$weight "
+                    )
+                }
+                activity!!.runOnUiThread { result.success(healthData) }
+            }
+        }
+    }
+
+    private fun dateTimeWithOffsetOrDefault(time: Instant, offset: ZoneOffset?): ZonedDateTime =
+        if (offset != null) {
+            ZonedDateTime.ofInstant(time, offset)
+        } else {
+            ZonedDateTime.ofInstant(time, ZoneId.systemDefault())
+        }
+
+    private fun getDate(milliSeconds: Long, dateFormat: String?): String? {
+        // Create a DateFormatter object for displaying date in specified format.
+        val formatter = SimpleDateFormat(dateFormat)
+
+        // Create a calendar object that will convert the date and time value in milliseconds to date.
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = milliSeconds
+        return formatter.format(calendar.time)
+    }
 
     private fun getData(call: MethodCall, result: Result) {
         if (activity == null) {
@@ -722,6 +823,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "getTotalStepsInInterval" -> getTotalStepsInInterval(call, result)
             "hasPermissions" -> hasPermissions(call, result)
             "hasPermissionsHealthConnect" -> hasPermissionHealthConnect(call, result)
+            "writeDataHealthConnect" -> writeDataHealthConnect(call, result)
+            "getHealthConnectData" -> getHealthConnectData(call, result)
             else -> result.notImplemented()
         }
     }

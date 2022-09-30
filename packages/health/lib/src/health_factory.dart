@@ -194,13 +194,34 @@ class HealthFactory {
   ///   + Simply set [endTime] equal to [startTime] if the [value] is measured only at a specific point in time.
   ///
   Future<bool> writeHealthData(
-    double value,
-    HealthDataType type,
-    DateTime startTime,
-    DateTime endTime,
-  ) async {
+    bool isDataFromHealthConnect,
+    HealthDataType type, {
+    DateTime? startTime,
+    DateTime? endTime,
+    double? value,
+    DateTime? currentTime,
+  }) async {
+    if (isDataFromHealthConnect) {
+      if (currentTime == null)
+        throw ArgumentError("currentTime must be not null");
+      if (type == HealthDataType.WEIGHT || type == HealthDataType.BODYFAT) {
+        if (value == null) throw ArgumentError("value must be not null");
+      }
+      Map<String, dynamic> args = {
+        'value': value,
+        'dataTypeKey': _enumToString(type),
+        'currentTime':
+            DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(currentTime).toString(),
+      };
+      bool? success =
+          await _channel.invokeMethod('writeDataHealthConnect', args);
+      return success ?? false;
+    }
+    if (startTime == null) throw ArgumentError("startTime must be not null");
+    if (endTime == null) throw ArgumentError("endTime must be not null");
     if (startTime.isAfter(endTime))
       throw ArgumentError("startTime must be equal or earlier than endTime");
+
     Map<String, dynamic> args = {
       'value': value,
       'dataTypeKey': _enumToString(type),
@@ -209,6 +230,32 @@ class HealthFactory {
     };
     bool? success = await _channel.invokeMethod('writeData', args);
     return success ?? false;
+  }
+
+  Future<List<dynamic>> getHealthConnectData(
+      DateTime startDate, DateTime endDate, HealthDataType type) async {
+    if (startDate.isAfter(endDate))
+      throw ArgumentError("startTime must be equal or earlier than endTime");
+
+    if (startDate == endDate) {
+      throw ArgumentError("end time needs be after start time");
+    }
+
+    Map<String, dynamic> args = {
+      'dataTypeKey': _enumToString(type),
+      'startDate':
+          DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(startDate).toString(),
+      'endDate': DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endDate).toString(),
+    };
+    var success = await _channel.invokeMethod('getHealthConnectData', args);
+    print(success);
+    if (success.length > 0) {
+      final list = success.map<HealthConnectWeight>((e) {
+        return HealthConnectWeight(e['uid'], e['weight'], e['zonedDateTime']);
+      }).toList();
+      return list;
+    }
+    return [];
   }
 
   /// Fetch a list of health data points based on [types].
