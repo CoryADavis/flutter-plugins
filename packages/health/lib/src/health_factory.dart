@@ -200,8 +200,22 @@ class HealthFactory {
     DateTime? endTime,
     double? value,
     DateTime? currentTime,
+    HealthConnectNutrition? nutrition,
   }) async {
-    if (isDataFromHealthConnect) {
+    if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
+      if (type == HealthDataType.NUTRITION) {
+        if (nutrition?.startTime.compareTo(nutrition.endTime) == 0)
+          throw ArgumentError("startTime must be earlier than endTime");
+        if (nutrition?.startTime.isAfter(nutrition.endTime) ?? false)
+          throw ArgumentError("startTime must be earlier than endTime");
+        Map<String, dynamic> args = {
+          'value': nutrition?.toMap(),
+          'dataTypeKey': _enumToString(type),
+        };
+        bool? success =
+            await _channel.invokeMethod('writeDataHealthConnect', args);
+        return success ?? false;
+      }
       if (currentTime == null)
         throw ArgumentError("currentTime must be not null");
       if (type == HealthDataType.WEIGHT || type == HealthDataType.BODYFAT) {
@@ -234,42 +248,60 @@ class HealthFactory {
 
   Future<List<dynamic>> getHealthConnectData(
       DateTime startDate, DateTime endDate, HealthDataType type) async {
-    if (startDate.isAfter(endDate))
-      throw ArgumentError("startTime must be equal or earlier than endTime");
+    if (_platformType == PlatformType.ANDROID) {
+      if (type == HealthDataType.WEIGHT || type == HealthDataType.BODYFAT) {
+        if (startDate.isAfter(endDate))
+          throw ArgumentError(
+              "startTime must be equal or earlier than endTime");
 
-    if (startDate == endDate) {
-      throw ArgumentError("end time needs be after start time");
-    }
+        if (startDate == endDate) {
+          throw ArgumentError("end time needs be after start time");
+        }
 
-    Map<String, dynamic> args = {
-      'dataTypeKey': _enumToString(type),
-      'startDate':
-          DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(startDate).toString(),
-      'endDate': DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endDate).toString(),
-    };
-    var success = await _channel.invokeMethod('getHealthConnectData', args);
-    print(success);
-    if (success.length > 0) {
-      final list = success.map<HealthConnectWeight>((e) {
-        return HealthConnectWeight(e['uid'], e['weight'], e['zonedDateTime']);
-      }).toList();
-      return list;
+        Map<String, dynamic> args = {
+          'dataTypeKey': _enumToString(type),
+          'startDate':
+              DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(startDate).toString(),
+          'endDate':
+              DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endDate).toString(),
+        };
+        var success = await _channel.invokeMethod('getHealthConnectData', args);
+        print(success);
+        if (success.length > 0) {
+          if (type == HealthDataType.WEIGHT) {
+            return success.map<HealthConnectWeight>((e) {
+              return HealthConnectWeight(
+                  e['uid'], e['weight'], e['zonedDateTime']);
+            }).toList();
+          } else if (type == HealthDataType.BODYFAT) {
+            return success.map<HealthConnectBodyFat>((e) {
+              return HealthConnectBodyFat(
+                  e['uid'], e['bodyFat'], e['zonedDateTime']);
+            }).toList();
+          }
+        }
+        return [];
+      }
+      return [];
     }
-    return [];
+    throw ArgumentError("This method will only work with Android.");
   }
 
   Future<bool> deleteHealthConnectData(HealthDataType type, String uID) async {
-    if (type == HealthDataType.WEIGHT) {
-      if (uID.isEmpty)
-        throw ArgumentError("startTime must be equal or earlier than endTime");
-      Map<String, dynamic> args = {
-        'dataTypeKey': _enumToString(type),
-        'uID': uID
-      };
-      var success = await _channel.invokeMethod('deleteHealthConnectData', args);
-      return success ?? false;
+    if (_platformType == PlatformType.ANDROID) {
+      if (type == HealthDataType.WEIGHT || type == HealthDataType.BODYFAT) {
+        if (uID.isEmpty) throw ArgumentError("uID must be not null");
+        Map<String, dynamic> args = {
+          'dataTypeKey': _enumToString(type),
+          'uID': uID
+        };
+        var success =
+            await _channel.invokeMethod('deleteHealthConnectData', args);
+        return success ?? false;
+      }
+      return false;
     }
-    return false;
+    throw ArgumentError("This method will only work with Android.");
   }
 
   /// Fetch a list of health data points based on [types].

@@ -11,13 +11,12 @@ import androidx.annotation.NonNull
 import androidx.compose.runtime.mutableStateOf
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.BodyFatRecord
-import androidx.health.connect.client.records.NutritionRecord
-import androidx.health.connect.client.records.Record
-import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
+import androidx.health.connect.client.units.Percentage
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
@@ -308,7 +307,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
-    @SuppressLint("SimpleDateFormat")
     private fun writeDataHealthConnect(call: MethodCall, result: Result) {
         if (activity == null) {
             result.success(false)
@@ -316,25 +314,222 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
         val type = call.argument<String>("dataTypeKey")!!
-        val currentTime = call.argument<String>("currentTime")!!
-        val value = call.argument<Float>("value")!!
 
-        if (type == WEIGHT) {
-            val time = ZonedDateTime.parse(
-                currentTime,
-                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
-            );
-            val weight = WeightRecord(
-                weight = Mass.kilograms(value.toDouble()),
-                time = time.toInstant(),
-                zoneOffset = time.offset
-            )
-            val records = listOf(weight)
-            CoroutineScope(Dispatchers.Main).launch {
-                healthConnectClient.insertRecords(records)
-                result.success(true)
+        var records = emptyList<Record>()
+        when (type) {
+            WEIGHT -> {
+                val currentTime = call.argument<String>("currentTime")!!
+                val value = call.argument<Float>("value")!!
+                val time = ZonedDateTime.parse(
+                    currentTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+                )
+                val weight = WeightRecord(
+                    weight = Mass.kilograms(value.toDouble()),
+                    time = time.toInstant(),
+                    zoneOffset = time.offset
+                )
+                records = listOf(weight)
+            }
+            BODYFAT -> {
+                val currentTime = call.argument<String>("currentTime")!!
+                val value = call.argument<Float>("value")!!
+                val time = ZonedDateTime.parse(
+                    currentTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+                )
+                val bodyFatRecord = BodyFatRecord(
+                    Percentage(value.toDouble()),
+                    time = time.toInstant(),
+                    zoneOffset = time.offset
+                )
+                records = listOf(bodyFatRecord)
+            }
+            NUTRITION -> {
+                val value = call.argument<Map<String, Any>>("value")!!
+                val startTime = ZonedDateTime.parse(
+                    value["startTime"].toString(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+                )
+                val endTime = ZonedDateTime.parse(
+                    value["endTime"].toString(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+                )
+                val nutritionRecord = NutritionRecord(
+                    startTime = startTime.toInstant(),
+                    endTime = endTime.toInstant(),
+                    startZoneOffset = startTime.offset,
+                    endZoneOffset = endTime.offset,
+                    mealType = (if (value.contains("mealType")) {
+                        value.getValue("mealType").toString(); } else null),
+                    name = (if (value.contains("name")) {
+                        value.getValue("name").toString(); } else null),
+                    biotin = (if (value.contains("biotin")) {
+                        getMassFromMap(value.getValue("biotin") as Map<String, Any>)
+                    } else null),
+                    caffeine = (if (value.contains("caffeine")) {
+                        getMassFromMap(value.getValue("caffeine") as Map<String, Any>)
+                    } else null),
+                    calcium = (if (value.contains("calcium")) {
+                        getMassFromMap(value.getValue("calcium") as Map<String, Any>)
+                    } else null),
+                    chloride = (if (value.contains("chloride")) {
+                        getMassFromMap(value.getValue("chloride") as Map<String, Any>)
+                    } else null),
+                    cholesterol = (if (value.contains("cholesterol")) {
+                        getMassFromMap(value.getValue("cholesterol") as Map<String, Any>)
+                    } else null),
+                    chromium = (if (value.contains("chromium")) {
+                        getMassFromMap(value.getValue("chromium") as Map<String, Any>)
+                    } else null),
+                    copper = (if (value.contains("copper")) {
+                        getMassFromMap(value.getValue("copper") as Map<String, Any>)
+                    } else null),
+                    dietaryFiber = (if (value.contains("dietaryFiber")) {
+                        getMassFromMap(value.getValue("dietaryFiber") as Map<String, Any>)
+                    } else null),
+                    energy = (if (value.contains("energy")) {
+                        getEnergyFromMap(value.getValue("energy") as Map<String, Any>)
+                    } else null),
+                    energyFromFat = (if (value.contains("energyFromFat")) {
+                        getEnergyFromMap(value.getValue("energyFromFat") as Map<String, Any>)
+                    } else null),
+                    folate = (if (value.contains("folate")) {
+                        getMassFromMap(value.getValue("folate") as Map<String, Any>)
+                    } else null),
+                    folicAcid = (if (value.contains("folicAcid")) {
+                        getMassFromMap(value.getValue("folicAcid") as Map<String, Any>)
+                    } else null),
+                    iodine = (if (value.contains("iodine")) {
+                        getMassFromMap(value.getValue("iodine") as Map<String, Any>)
+                    } else null),
+                    iron = (if (value.contains("iron")) {
+                        getMassFromMap(value.getValue("iron") as Map<String, Any>)
+                    } else null),
+                    magnesium = (if (value.contains("magnesium")) {
+                        getMassFromMap(value.getValue("magnesium") as Map<String, Any>)
+                    } else null),
+                    manganese = (if (value.contains("manganese")) {
+                        getMassFromMap(value.getValue("manganese") as Map<String, Any>)
+                    } else null),
+                    molybdenum = (if (value.contains("molybdenum")) {
+                        getMassFromMap(value.getValue("molybdenum") as Map<String, Any>)
+                    } else null),
+                    monounsaturatedFat = (if (value.contains("monounsaturatedFat")) {
+                        getMassFromMap(value.getValue("monounsaturatedFat") as Map<String, Any>)
+                    } else null),
+                    niacin = (if (value.contains("niacin")) {
+                        getMassFromMap(value.getValue("niacin") as Map<String, Any>)
+                    } else null),
+                    pantothenicAcid = (if (value.contains("pantothenicAcid")) {
+                        getMassFromMap(value.getValue("pantothenicAcid") as Map<String, Any>)
+                    } else null),
+                    phosphorus = (if (value.contains("phosphorus")) {
+                        getMassFromMap(value.getValue("phosphorus") as Map<String, Any>)
+                    } else null),
+                    polyunsaturatedFat = (if (value.contains("polyunsaturatedFat")) {
+                        getMassFromMap(value.getValue("polyunsaturatedFat") as Map<String, Any>)
+                    } else null),
+                    potassium = (if (value.contains("potassium")) {
+                        getMassFromMap(value.getValue("potassium") as Map<String, Any>)
+                    } else null),
+                    protein = (if (value.contains("protein")) {
+                        getMassFromMap(value.getValue("protein") as Map<String, Any>)
+                    } else null),
+                    riboflavin = (if (value.contains("riboflavin")) {
+                        getMassFromMap(value.getValue("riboflavin") as Map<String, Any>)
+                    } else null),
+                    saturatedFat = (if (value.contains("saturatedFat")) {
+                        getMassFromMap(value.getValue("saturatedFat") as Map<String, Any>)
+                    } else null),
+                    selenium = (if (value.contains("selenium")) {
+                        getMassFromMap(value.getValue("selenium") as Map<String, Any>)
+                    } else null),
+                    sodium = (if (value.contains("sodium")) {
+                        getMassFromMap(value.getValue("sodium") as Map<String, Any>)
+                    } else null),
+                    sugar = (if (value.contains("sugar")) {
+                        getMassFromMap(value.getValue("sugar") as Map<String, Any>)
+                    } else null),
+                    thiamin = (if (value.contains("thiamin")) {
+                        getMassFromMap(value.getValue("thiamin") as Map<String, Any>)
+                    } else null),
+                    totalCarbohydrate = (if (value.contains("totalCarbohydrate")) {
+                        getMassFromMap(value.getValue("totalCarbohydrate") as Map<String, Any>)
+                    } else null),
+                    totalFat = (if (value.contains("totalFat")) {
+                        getMassFromMap(value.getValue("totalFat") as Map<String, Any>)
+                    } else null),
+                    transFat = (if (value.contains("transFat")) {
+                        getMassFromMap(value.getValue("transFat") as Map<String, Any>)
+                    } else null),
+                    unsaturatedFat = (if (value.contains("unsaturatedFat")) {
+                        getMassFromMap(value.getValue("unsaturatedFat") as Map<String, Any>)
+                    } else null),
+                    vitaminA = (if (value.contains("vitaminA")) {
+                        getMassFromMap(value.getValue("vitaminA") as Map<String, Any>)
+                    } else null),
+                    vitaminB6 = (if (value.contains("vitaminB6")) {
+                        getMassFromMap(value.getValue("vitaminB6") as Map<String, Any>)
+                    } else null),
+                    vitaminB12 = (if (value.contains("vitaminB12")) {
+                        getMassFromMap(value.getValue("vitaminB12") as Map<String, Any>)
+                    } else null),
+                    vitaminC = (if (value.contains("vitaminC")) {
+                        getMassFromMap(value.getValue("vitaminC") as Map<String, Any>)
+                    } else null),
+                    vitaminD = (if (value.contains("vitaminD")) {
+                        getMassFromMap(value.getValue("vitaminD") as Map<String, Any>)
+                    } else null),
+                    vitaminE = (if (value.contains("vitaminE")) {
+                        getMassFromMap(value.getValue("vitaminE") as Map<String, Any>)
+                    } else null),
+                    vitaminK = (if (value.contains("vitaminK")) {
+                        getMassFromMap(value.getValue("vitaminK") as Map<String, Any>)
+                    } else null),
+                    zinc = (if (value.contains("zinc")) {
+                        getMassFromMap(value.getValue("zinc") as Map<String, Any>)
+                    } else null),
+                )
+                records = listOf(nutritionRecord)
             }
         }
+        CoroutineScope(Dispatchers.Main).launch {
+            healthConnectClient.insertRecords(records)
+            result.success(true)
+        }
+
+    }
+
+    private fun getMassFromMap(map: Map<String, Any>): Mass {
+        if (map.getValue("type") == "GRAMS") {
+            return Mass.grams(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "KILOGRAMS") {
+            return Mass.kilograms(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "MILLIGRAMS") {
+            return Mass.milligrams(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "MICROGRAMS") {
+            return Mass.micrograms(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "OUNCES") {
+            return Mass.ounces(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "POUNDS") {
+            return Mass.pounds(map.getValue("value") as Double)
+        }
+        return Mass.grams(map.getValue("value") as Double)
+    }
+
+    private fun getEnergyFromMap(map: Map<String, Any>): Energy {
+        if (map.getValue("type") == "CALORIES") {
+            return Energy.calories(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "KILOCALORIES") {
+            return Energy.kilocalories(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "JOULES") {
+            return Energy.joules(map.getValue("value") as Double)
+        } else if (map.getValue("type") == "KILOJOULES") {
+            return Energy.kilojoules(map.getValue("value") as Double)
+        }
+
+        return Energy.calories(map.getValue("value") as Double)
     }
 
     private fun getHealthConnectData(call: MethodCall, result: Result) {
@@ -380,6 +575,40 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 }
                 activity!!.runOnUiThread { result.success(healthData) }
             }
+        } else if (type == BODYFAT) {
+            val startDate = ZonedDateTime.parse(
+                startDate,
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val endDate = ZonedDateTime.parse(
+                endDate,
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val request = ReadRecordsRequest(
+                recordType = BodyFatRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(
+                    startDate.toInstant(),
+                    endDate.toInstant()
+                )
+            )
+            CoroutineScope(Dispatchers.Main).launch {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<BodyFatRecord> = response.records;
+
+                val healthData = dataList.mapIndexed { _, it ->
+                    val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                    val zonedDateTime =
+                        dateTimeWithOffsetOrDefault(it.time, it.zoneOffset)
+                    val uid = it.metadata.uid
+                    val bodyFat = it.percentage.value
+                    return@mapIndexed hashMapOf(
+                        "zonedDateTime" to formatter.format(zonedDateTime),
+                        "uid" to uid,
+                        "bodyFat" to "$bodyFat "
+                    )
+                }
+                activity!!.runOnUiThread { result.success(healthData) }
+            }
         }
     }
 
@@ -400,6 +629,15 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 )
                 result.success(true)
             }
+        } else if (type == BODYFAT) {
+            CoroutineScope(Dispatchers.Main).launch {
+                healthConnectClient.deleteRecords(
+                    BodyFatRecord::class,
+                    uidsList = listOf(uID),
+                    clientRecordIdsList = emptyList()
+                )
+                result.success(true)
+            }
         }
     }
 
@@ -409,16 +647,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         } else {
             ZonedDateTime.ofInstant(time, ZoneId.systemDefault())
         }
-
-    private fun getDate(milliSeconds: Long, dateFormat: String?): String? {
-        // Create a DateFormatter object for displaying date in specified format.
-        val formatter = SimpleDateFormat(dateFormat)
-
-        // Create a calendar object that will convert the date and time value in milliseconds to date.
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = milliSeconds
-        return formatter.format(calendar.time)
-    }
 
     private fun getData(call: MethodCall, result: Result) {
         if (activity == null) {
