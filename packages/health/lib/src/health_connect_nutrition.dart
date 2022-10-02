@@ -135,51 +135,134 @@ class HealthConnectNutrition {
   /// Vitamin E in [Mass] unit. Optional field. Valid range: 0-100 grams. */
   Mass? vitaminE;
 
+  // For Read Use Only
+  String? uID = "";
+
   HealthConnectNutrition(this.startTime, this.endTime,
       {this.mealType,
-      this.name,
-      this.vitaminK,
-      this.zinc,
-      this.biotin,
-      this.caffeine,
-      this.calcium,
-      this.chloride,
-      this.cholesterol,
-      this.chromium,
-      this.copper,
-      this.dietaryFiber,
-      this.energy,
-      this.energyFromFat,
-      this.folate,
-      this.folicAcid,
-      this.iodine,
-      this.iron,
-      this.magnesium,
-      this.manganese,
-      this.molybdenum,
-      this.monounsaturatedFat,
-      this.niacin,
-      this.pantothenicAcid,
-      this.phosphorus,
-      this.polyunsaturatedFat,
-      this.potassium,
-      this.protein,
-      this.riboflavin,
-      this.saturatedFat,
-      this.selenium,
-      this.sodium,
-      this.sugar,
-      this.thiamin,
-      this.totalCarbohydrate,
-      this.totalFat,
-      this.transFat,
-      this.unsaturatedFat,
-      this.vitaminA,
-      this.vitaminB6,
-      this.vitaminB12,
-      this.vitaminC,
-      this.vitaminD,
-      this.vitaminE});
+        this.name,
+        this.vitaminK,
+        this.zinc,
+        this.biotin,
+        this.caffeine,
+        this.calcium,
+        this.chloride,
+        this.cholesterol,
+        this.chromium,
+        this.copper,
+        this.dietaryFiber,
+        this.energy,
+        this.energyFromFat,
+        this.folate,
+        this.folicAcid,
+        this.iodine,
+        this.iron,
+        this.magnesium,
+        this.manganese,
+        this.molybdenum,
+        this.monounsaturatedFat,
+        this.niacin,
+        this.pantothenicAcid,
+        this.phosphorus,
+        this.polyunsaturatedFat,
+        this.potassium,
+        this.protein,
+        this.riboflavin,
+        this.saturatedFat,
+        this.selenium,
+        this.sodium,
+        this.sugar,
+        this.thiamin,
+        this.totalCarbohydrate,
+        this.totalFat,
+        this.transFat,
+        this.unsaturatedFat,
+        this.vitaminA,
+        this.vitaminB6,
+        this.vitaminB12,
+        this.vitaminC,
+        this.vitaminD,
+        this.vitaminE,
+        this.uID});
+
+  factory HealthConnectNutrition.fromJson(Map<dynamic, dynamic> json) =>
+      HealthConnectNutrition(
+        DateFormat("DD MMM yyyy, HH:mm:ss").parse(json['startDateTime']),
+        DateFormat("DD MMM yyyy, HH:mm:ss").parse(json['endDateTime']),
+        uID: json['uid'],
+        mealType: json.containsKey("mealType")
+            ? getMealType(json['mealType'])
+            : null,
+        name: json.containsKey("name") ? json['name'] : null,
+        biotin: json.containsKey("biotin") ? Mass(json['biotin']) : null,
+        caffeine: json.containsKey("caffeine") ? Mass(json['caffeine']) : null,
+        calcium: json.containsKey("calcium") ? Mass(json['calcium']) : null,
+        energy: json.containsKey("energy") ? Energy(json['energy']) : null,
+        energyFromFat: json.containsKey("energyFromFat")
+            ? Energy(json['energyFromFat'])
+            : null,
+        chloride: json.containsKey("chloride") ? Mass(json['chloride']) : null,
+        cholesterol:
+        json.containsKey("cholesterol") ? Mass(json['cholesterol']) : null,
+        chromium: json.containsKey("chromium") ? Mass(json['chromium']) : null,
+        copper: json.containsKey("copper") ? Mass(json['copper']) : null,
+        dietaryFiber: json.containsKey("dietaryFiber")
+            ? Mass(json['dietaryFiber'])
+            : null,
+        folate: json.containsKey("folate") ? Mass(json['folate']) : null,
+        folicAcid:
+        json.containsKey("folicAcid") ? Mass(json['folicAcid']) : null,
+        iodine: json.containsKey("iodine") ? Mass(json['iodine']) : null,
+        iron: json.containsKey("iron") ? Mass(json['iron']) : null,
+        magnesium:
+        json.containsKey("magnesium") ? Mass(json['magnesium']) : null,
+        manganese:
+        json.containsKey("manganese") ? Mass(json['manganese']) : null,
+        molybdenum:
+        json.containsKey("molybdenum") ? Mass(json['molybdenum']) : null,
+        monounsaturatedFat: json.containsKey("monounsaturatedFat")
+            ? Mass(json['monounsaturatedFat'])
+            : null,
+        niacin: json.containsKey("niacin") ? Mass(json['niacin']) : null,
+        pantothenicAcid: json.containsKey("pantothenicAcid")
+            ? Mass(json['pantothenicAcid'])
+            : null,
+        phosphorus:
+        json.containsKey("phosphorus") ? Mass(json['phosphorus']) : null,
+        polyunsaturatedFat: json.containsKey("polyunsaturatedFat")
+            ? Mass(json['polyunsaturatedFat'])
+            : null,
+        potassium:
+        json.containsKey("potassium") ? Mass(json['potassium']) : null,
+        protein: json.containsKey("protein") ? Mass(json['protein']) : null,
+        riboflavin:
+        json.containsKey("riboflavin") ? Mass(json['riboflavin']) : null,
+        saturatedFat: json.containsKey("saturatedFat")
+            ? Mass(json['saturatedFat'])
+            : null,
+        selenium: json.containsKey("selenium") ? Mass(json['selenium']) : null,
+        sodium: json.containsKey("sodium") ? Mass(json['sodium']) : null,
+        sugar: json.containsKey("sugar") ? Mass(json['sugar']) : null,
+        thiamin: json.containsKey("thiamin") ? Mass(json['thiamin']) : null,
+        totalCarbohydrate: json.containsKey("totalCarbohydrate")
+            ? Mass(json['totalCarbohydrate'])
+            : null,
+        totalFat: json.containsKey("totalFat") ? Mass(json['totalFat']) : null,
+        transFat: json.containsKey("transFat") ? Mass(json['transFat']) : null,
+        unsaturatedFat: json.containsKey("unsaturatedFat")
+            ? Mass(json['unsaturatedFat'])
+            : null,
+        vitaminA: json.containsKey("vitaminA") ? Mass(json['vitaminA']) : null,
+        vitaminB12:
+        json.containsKey("vitaminB12") ? Mass(json['vitaminB12']) : null,
+        vitaminB6:
+        json.containsKey("vitaminB6") ? Mass(json['vitaminB6']) : null,
+        vitaminC: json.containsKey("vitaminC") ? Mass(json['vitaminC']) : null,
+        vitaminD: json.containsKey("vitaminD") ? Mass(json['vitaminD']) : null,
+        vitaminE: json.containsKey("vitaminE") ? Mass(json['vitaminE']) : null,
+        vitaminK: json.containsKey("vitaminK") ? Mass(json['vitaminK']) : null,
+        zinc: json.containsKey("zinc") ? Mass(json['zinc']) : null,
+      );
 
   Map toMap() {
     var map = Map<String, dynamic>();
@@ -189,7 +272,7 @@ class HealthConnectNutrition {
         DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endTime).toString();
 
     if (mealType != null) {
-      map['mealType'] = getMealType(mealType!);
+      map['mealType'] = getMealTypeAsString(mealType!);
     }
     if (name != null) {
       map['name'] = name;
@@ -452,7 +535,7 @@ enum MealType {
   SNACK,
 }
 
-String getMealType(MealType data) {
+String getMealTypeAsString(MealType data) {
   if (data == MealType.UNKNOWN) {
     return "unknown";
   } else if (data == MealType.BREAKFAST) {
@@ -465,4 +548,19 @@ String getMealType(MealType data) {
     return "snack";
   }
   return "";
+}
+
+MealType getMealType(String data) {
+  if (data == "unknown") {
+    return MealType.UNKNOWN;
+  } else if (data == "breakfast") {
+    return MealType.BREAKFAST;
+  } else if (data == "dinner") {
+    return MealType.DINNER;
+  } else if (data == "lunch") {
+    return MealType.LUNCH;
+  } else if (data == "snack") {
+    return MealType.SNACK;
+  }
+  return MealType.UNKNOWN;
 }

@@ -263,8 +263,8 @@ class _HealthAppState extends State<HealthApp> {
         nutrition: HealthConnectNutrition(startTime, endTime,
             name: "Pixelapps BreakFast",
             mealType: MealType.BREAKFAST,
-            biotin: Mass(1.5, type: Type.MICROGRAMS),
-            energy: Energy(11.1, type: EType.CALORIES)));
+            biotin: Mass(1.5, type: Type.GRAMS),
+            energy: Energy(11, type: EType.KILOCALORIES)));
 
     Fluttertoast.showToast(
         msg: success ? "Data Added" : "Something went wrong",
@@ -280,7 +280,28 @@ class _HealthAppState extends State<HealthApp> {
     }
   }
 
-  Future readNutritionDataFromHealthConnect() async {}
+  List<HealthConnectNutrition> healthNutrition = [];
+
+  Future readNutritionDataFromHealthConnect() async {
+    var type = HealthDataType.NUTRITION;
+    final startTime = DateTime.now().subtract(Duration(minutes: 700));
+    final endTime = DateTime.now();
+    List<dynamic> success =
+        await health.getHealthConnectData(startTime, endTime, type);
+    healthNutrition = [];
+    healthNutrition = success as List<HealthConnectNutrition>;
+    setState(() {});
+  }
+
+  Future deleteNutritionDataFromHealthConnect(String uID) async {
+    var type = HealthDataType.NUTRITION;
+
+    bool success = await health.deleteHealthConnectData(type, uID);
+    if (success) {
+      healthNutrition.removeWhere((element) => element.uID == uID);
+      setState(() {});
+    }
+  }
 
   /// Fetch steps from the health plugin and show them in the app.
   Future fetchStepData() async {
@@ -466,8 +487,6 @@ class _HealthAppState extends State<HealthApp> {
                                         onPressed: () {
                                           Navigator.of(context)
                                               .pop(); // dismiss dialog
-                                          deleteWeightDataFromHealthConnect(
-                                              data.uID);
                                         },
                                       )
                                     ],
@@ -553,6 +572,58 @@ class _HealthAppState extends State<HealthApp> {
                                   "Please mark bottom checkbox for Health Connect data");
                         },
                         child: Text("Nutrition add to Health Connect")),
+                    ElevatedButton(
+                        onPressed: () {
+                          if (isDataFromHealthConnect) {
+                            readNutritionDataFromHealthConnect();
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text("Read Nutrition from Health Connect")),
+                    ListView.builder(
+                        itemCount: healthNutrition.length,
+                        shrinkWrap: true,
+                        itemBuilder: (_, index) {
+                          HealthConnectNutrition data = healthNutrition[index];
+                          return ListTile(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text(
+                                        "Are you sure you want delete entry?"),
+                                    actions: [
+                                      TextButton(
+                                        child: Text("Delete"),
+                                        onPressed: () {
+                                          Navigator.of(context)
+                                              .pop(); // dismiss dialog
+                                          deleteNutritionDataFromHealthConnect(
+                                              data.uID ?? "");
+                                        },
+                                      ),
+                                      TextButton(
+                                        child: Text("Cancel"),
+                                        onPressed: () {
+                                          Navigator.of(context)
+                                              .pop(); // dismiss dialog
+                                        },
+                                      )
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            title: Text(
+                                "Name: ${data.name} MealType: ${getMealTypeAsString(data.mealType ?? MealType.UNKNOWN)}"),
+                            subtitle: Text(
+                                'DateTime ${data.startTime.toIso8601String()} - ${data.endTime.toIso8601String()}\nuID ${data.uID}\nbiotin : ${data.biotin?.getInGram} gram'),
+                          );
+                        }),
                   ],
                 ),
               ),
