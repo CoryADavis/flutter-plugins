@@ -27,3 +27,5 @@ part 'src/health_connect_nutrition.dart';
 part 'src/mass.dart';
 
 part 'src/energy.dart';
+
+part 'src/health_connect_data.dart';

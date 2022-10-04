@@ -1,14 +1,24 @@
 part of health;
 
-class HealthConnectBodyFat {
-  String uID;
-  String bodyFat;
-  String zonedDateTime;
+class HealthConnectBodyFat extends HealthConnectData {
+  final String uID;
+  final String bodyFat;
+  final String zonedDateTime;
+  final HealthDataType healthDataType;
 
-  HealthConnectBodyFat(this.uID, this.bodyFat, this.zonedDateTime);
+  HealthConnectBodyFat(
+      {required this.uID,
+      required this.bodyFat,
+      required this.zonedDateTime,
+      required this.healthDataType})
+      : super(uID, healthDataType);
 
-  factory HealthConnectBodyFat.fromJson(json) =>
-      HealthConnectBodyFat(json['uid'], json['bodyFat'], json['zonedDateTime']);
+  factory HealthConnectBodyFat.fromJson(json, HealthDataType healthDataType) =>
+      HealthConnectBodyFat(
+          uID: json['uid'],
+          bodyFat: json['bodyFat'],
+          zonedDateTime: json['zonedDateTime'],
+          healthDataType: healthDataType);
 
   /// Converts the [HealthDataPoint] to a json object
   Map<String, dynamic> toJson() => {

@@ -642,8 +642,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                             dateTimeWithOffsetOrDefault(it.endTime, it.endZoneOffset)
                         val uid = it.metadata.uid
                         val hashMapData = hashMapOf<String, Any>(
-                            "startDateTime" to formatter.format(startZonedDateTime),
-                            "endDateTime" to formatter.format(endZonedDateTime),
+                            "startDateTime" to startZonedDateTime.toEpochSecond(),
+                            "endDateTime" to  endZonedDateTime.toEpochSecond(),
                             "uid" to uid,
                         )
                         if (it.biotin != null) {

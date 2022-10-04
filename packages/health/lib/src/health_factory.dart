@@ -1,5 +1,7 @@
 part of health;
 
+enum AndroidDataSource { HealthConnect, GoogleFit }
+
 /// Main class for the Plugin.
 ///
 /// The plugin supports:
@@ -194,15 +196,25 @@ class HealthFactory {
   ///   + Simply set [endTime] equal to [startTime] if the [value] is measured only at a specific point in time.
   ///
   Future<bool> writeHealthData(
-    bool isDataFromHealthConnect,
     HealthDataType type, {
     DateTime? startTime,
     DateTime? endTime,
     double? value,
     DateTime? currentTime,
     HealthConnectNutrition? nutrition,
+    AndroidDataSource? androidDataSource,
   }) async {
-    if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
+    if (androidDataSource == AndroidDataSource.HealthConnect &&
+        type == HealthDataType.NUTRITION &&
+        nutrition == null) throw ArgumentError("Nutrition shouldn't be null");
+    if (androidDataSource == AndroidDataSource.HealthConnect &&
+        (type != HealthDataType.NUTRITION &&
+            type != HealthDataType.WEIGHT &&
+            type != HealthDataType.BODYFAT))
+      throw ArgumentError(
+          "This datatype is not supported for HealthConnect yet");
+    if (androidDataSource == AndroidDataSource.HealthConnect &&
+        _platformType == PlatformType.ANDROID) {
       if (type == HealthDataType.NUTRITION) {
         if (nutrition?.startTime.compareTo(nutrition.endTime) == 0)
           throw ArgumentError("startTime must be earlier than endTime");
@@ -246,7 +258,7 @@ class HealthFactory {
     return success ?? false;
   }
 
-  Future<List<dynamic>> getHealthConnectData(
+  Future<List<HealthConnectData>> getHealthConnectData(
       DateTime startDate, DateTime endDate, HealthDataType type) async {
     if (_platformType == PlatformType.ANDROID) {
       if (startDate.isAfter(endDate))
@@ -267,17 +279,15 @@ class HealthFactory {
       if (success.length > 0) {
         if (type == HealthDataType.WEIGHT) {
           return success.map<HealthConnectWeight>((e) {
-            return HealthConnectWeight(
-                e['uid'], e['weight'], e['zonedDateTime']);
+            return HealthConnectWeight.fromJson(e as Map<dynamic, dynamic>, type);
           }).toList();
         } else if (type == HealthDataType.BODYFAT) {
           return success.map<HealthConnectBodyFat>((e) {
-            return HealthConnectBodyFat(
-                e['uid'], e['bodyFat'], e['zonedDateTime']);
+            return HealthConnectBodyFat.fromJson(e as Map<dynamic, dynamic>, type);
           }).toList();
         } else if (type == HealthDataType.NUTRITION) {
           return success.map<HealthConnectNutrition>((e) {
-            return HealthConnectNutrition.fromJson(e as Map<dynamic, dynamic>);
+            return HealthConnectNutrition.fromJson(e as Map<dynamic, dynamic>,type);
           }).toList();
         }
       }

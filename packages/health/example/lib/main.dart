@@ -25,8 +25,7 @@ enum AppState {
 }
 
 class _HealthAppState extends State<HealthApp> {
-  bool isDataFromHealthConnect = false;
-
+  AndroidDataSource androidDataSource = AndroidDataSource.HealthConnect;
   List<HealthDataPoint> _healthDataList = [];
   AppState _state = AppState.DATA_NOT_FETCHED;
   int _nofSteps = 10;
@@ -99,7 +98,7 @@ class _HealthAppState extends State<HealthApp> {
   }
 
   /// Add some random health data.
-  Future addData() async {
+  /*Future addData() async {
     final now = DateTime.now();
     final earlier = now.subtract(Duration(minutes: 5));
 
@@ -163,17 +162,18 @@ class _HealthAppState extends State<HealthApp> {
           backgroundColor: Colors.red,
           textColor: Colors.white,
           fontSize: 16.0);
-      /*setState(() {
+      */ /*setState(() {
         _state = success ? AppState.DATA_ADDED : AppState.DATA_NOT_ADDED;
-      });*/
+      });*/ /*
     }
-  }
+  }*/
 
   Future addWeightDataToHealthConnect() async {
     final now = DateTime.now();
-    bool success = await health.writeHealthData(
-        isDataFromHealthConnect, HealthDataType.WEIGHT,
-        value: 100.toDouble(), currentTime: now);
+    bool success = await health.writeHealthData(HealthDataType.WEIGHT,
+        androidDataSource: androidDataSource,
+        value: 100.toDouble(),
+        currentTime: now);
 
     Fluttertoast.showToast(
         msg: success ? "Data Added" : "Something went wrong",
@@ -195,10 +195,10 @@ class _HealthAppState extends State<HealthApp> {
     var type = HealthDataType.WEIGHT;
     final startTime = DateTime.now().subtract(Duration(minutes: 100));
     final endTime = DateTime.now();
-    List<dynamic> success =
+    List<HealthConnectData> success =
         await health.getHealthConnectData(startTime, endTime, type);
     healthWeight = [];
-    healthWeight = success as List<HealthConnectWeight>;
+    healthWeight = success.cast<HealthConnectWeight>();
     setState(() {});
   }
 
@@ -214,9 +214,10 @@ class _HealthAppState extends State<HealthApp> {
 
   Future addBodyFatDataToHealthConnect() async {
     final now = DateTime.now();
-    bool success = await health.writeHealthData(
-        isDataFromHealthConnect, HealthDataType.BODYFAT,
-        value: 22.toDouble(), currentTime: now);
+    bool success = await health.writeHealthData(HealthDataType.BODYFAT,
+        androidDataSource: androidDataSource,
+        value: 22.toDouble(),
+        currentTime: now);
 
     Fluttertoast.showToast(
         msg: success ? "Data Added" : "Something went wrong",
@@ -238,10 +239,10 @@ class _HealthAppState extends State<HealthApp> {
     var type = HealthDataType.BODYFAT;
     final startTime = DateTime.now().subtract(Duration(minutes: 100));
     final endTime = DateTime.now();
-    List<dynamic> success =
+    List<HealthConnectData> success =
         await health.getHealthConnectData(startTime, endTime, type);
     healthBodyFat = [];
-    healthBodyFat = success as List<HealthConnectBodyFat>;
+    healthBodyFat = success.cast<HealthConnectBodyFat>();
     setState(() {});
   }
 
@@ -258,8 +259,8 @@ class _HealthAppState extends State<HealthApp> {
   Future addNutritionDataToHealthConnect() async {
     final startTime = DateTime.now().subtract(Duration(minutes: 30));
     final endTime = DateTime.now();
-    bool success = await health.writeHealthData(
-        isDataFromHealthConnect, HealthDataType.NUTRITION,
+    bool success = await health.writeHealthData(HealthDataType.NUTRITION,
+        androidDataSource: androidDataSource,
         nutrition: HealthConnectNutrition(startTime, endTime,
             name: "Pixelapps BreakFast",
             mealType: MealType.BREAKFAST,
@@ -286,10 +287,10 @@ class _HealthAppState extends State<HealthApp> {
     var type = HealthDataType.NUTRITION;
     final startTime = DateTime.now().subtract(Duration(minutes: 700));
     final endTime = DateTime.now();
-    List<dynamic> success =
+    List<HealthConnectData> success =
         await health.getHealthConnectData(startTime, endTime, type);
     healthNutrition = [];
-    healthNutrition = success as List<HealthConnectNutrition>;
+    healthNutrition = success.cast<HealthConnectNutrition>();
     setState(() {});
   }
 
@@ -445,7 +446,8 @@ class _HealthAppState extends State<HealthApp> {
                   children: [
                     ElevatedButton(
                         onPressed: () {
-                          if (isDataFromHealthConnect) {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
                             addWeightDataToHealthConnect();
                             return;
                           }
@@ -501,7 +503,8 @@ class _HealthAppState extends State<HealthApp> {
                         }),
                     ElevatedButton(
                         onPressed: () {
-                          if (isDataFromHealthConnect) {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
                             addBodyFatDataToHealthConnect();
                             return;
                           }
@@ -512,7 +515,8 @@ class _HealthAppState extends State<HealthApp> {
                         child: Text("BodyFat add to Health Connect")),
                     ElevatedButton(
                         onPressed: () {
-                          if (isDataFromHealthConnect) {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
                             readBodyFatDataFromHealthConnect();
                             return;
                           }
@@ -563,7 +567,8 @@ class _HealthAppState extends State<HealthApp> {
                         }),
                     ElevatedButton(
                         onPressed: () {
-                          if (isDataFromHealthConnect) {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
                             addNutritionDataToHealthConnect();
                             return;
                           }
@@ -574,7 +579,8 @@ class _HealthAppState extends State<HealthApp> {
                         child: Text("Nutrition add to Health Connect")),
                     ElevatedButton(
                         onPressed: () {
-                          if (isDataFromHealthConnect) {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
                             readNutritionDataFromHealthConnect();
                             return;
                           }
@@ -639,9 +645,18 @@ class _HealthAppState extends State<HealthApp> {
                           children: [
                             Text("Android Data from Health Connect"),
                             Checkbox(
-                                value: isDataFromHealthConnect,
+                                value: androidDataSource ==
+                                        AndroidDataSource.HealthConnect
+                                    ? true
+                                    : false,
                                 onChanged: (value) {
-                                  isDataFromHealthConnect = value ?? false;
+                                  if (value ?? false) {
+                                    androidDataSource =
+                                        AndroidDataSource.HealthConnect;
+                                  } else {
+                                    androidDataSource =
+                                        AndroidDataSource.GoogleFit;
+                                  }
                                   setState(() {});
                                 }),
                           ],

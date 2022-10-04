@@ -1,198 +1,203 @@
 part of health;
 
-class HealthConnectNutrition {
-  DateTime startTime;
-  DateTime endTime;
+class HealthConnectNutrition extends HealthConnectData {
+  final HealthDataType? healthDataType;
 
-  MealType? mealType;
+  final DateTime startTime;
+  final DateTime endTime;
+
+  final MealType? mealType;
 
   /// Name for food or drink, provided by the user. Optional field. */
-  String? name;
+  final String? name;
 
   /// Zinc in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? zinc;
+  final Mass? zinc;
 
   /// Vitamin K in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminK;
+  final Mass? vitaminK;
 
   /// Biotin in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? biotin;
+  final Mass? biotin;
 
   /// Caffeine in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? caffeine;
+  final Mass? caffeine;
 
   /// Calcium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? calcium;
+  final Mass? calcium;
 
   /// Energy in [Energy] unit. Optional field. Valid range: 0-100000 kcal. */
-  Energy? energy;
+  final Energy? energy;
 
   /// Energy from fat in [Energy] unit. Optional field. Valid range: 0-100000 kcal. */
-  Energy? energyFromFat;
+  final Energy? energyFromFat;
 
   /// Chloride in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? chloride;
+  final Mass? chloride;
 
   /// Cholesterol in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? cholesterol;
+  final Mass? cholesterol;
 
   /// Chromium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? chromium;
+  final Mass? chromium;
 
   /// Copper in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? copper;
+  final Mass? copper;
 
   /// Dietary fiber in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? dietaryFiber;
+  final Mass? dietaryFiber;
 
   /// Folate in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? folate;
+  final Mass? folate;
 
   /// Folic acid in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? folicAcid;
+  final Mass? folicAcid;
 
   /// Iodine in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? iodine;
+  final Mass? iodine;
 
   /// Iron in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? iron;
+  final Mass? iron;
 
   /// Magnesium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? magnesium;
+  final Mass? magnesium;
 
   /// Manganese in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? manganese;
+  final Mass? manganese;
 
   /// Molybdenum in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? molybdenum;
+  final Mass? molybdenum;
 
   /// Monounsaturated fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? monounsaturatedFat;
+  final Mass? monounsaturatedFat;
 
   /// Niacin in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? niacin;
+  final Mass? niacin;
 
   /// Pantothenic acid in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? pantothenicAcid;
+  final Mass? pantothenicAcid;
 
   /// Phosphorus in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? phosphorus;
+  final Mass? phosphorus;
 
   /// Polyunsaturated fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? polyunsaturatedFat;
+  final Mass? polyunsaturatedFat;
 
   /// Potassium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? potassium;
+  final Mass? potassium;
 
   /// Protein in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? protein;
+  final Mass? protein;
 
   /// Riboflavin in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? riboflavin;
+  final Mass? riboflavin;
 
   /// Saturated fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? saturatedFat;
+  final Mass? saturatedFat;
 
   /// Selenium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? selenium;
+  final Mass? selenium;
 
   /// Sodium in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? sodium;
+  final Mass? sodium;
 
   /// Sugar in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? sugar;
+  final Mass? sugar;
 
   /// Thiamin in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? thiamin;
+  final Mass? thiamin;
 
   /// Total carbohydrate in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? totalCarbohydrate;
+  final Mass? totalCarbohydrate;
 
   /// Total fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? totalFat;
+  final Mass? totalFat;
 
   /// Trans fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? transFat;
+  final Mass? transFat;
 
   /// Unsaturated fat in [Mass] unit. Optional field. Valid range: 0-100000 grams. */
-  Mass? unsaturatedFat;
+  final Mass? unsaturatedFat;
 
   /// Vitamin A in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminA;
+  final Mass? vitaminA;
 
   /// Vitamin B12 in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminB12;
+  final Mass? vitaminB12;
 
   /// Vitamin B6 in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminB6;
+  final Mass? vitaminB6;
 
   /// Vitamin C in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminC;
+  final Mass? vitaminC;
 
   /// Vitamin D in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminD;
+  final Mass? vitaminD;
 
   /// Vitamin E in [Mass] unit. Optional field. Valid range: 0-100 grams. */
-  Mass? vitaminE;
+  final Mass? vitaminE;
 
   // For Read Use Only
-  String? uID = "";
+  final String? uID;
 
   HealthConnectNutrition(this.startTime, this.endTime,
       {this.mealType,
-        this.name,
-        this.vitaminK,
-        this.zinc,
-        this.biotin,
-        this.caffeine,
-        this.calcium,
-        this.chloride,
-        this.cholesterol,
-        this.chromium,
-        this.copper,
-        this.dietaryFiber,
-        this.energy,
-        this.energyFromFat,
-        this.folate,
-        this.folicAcid,
-        this.iodine,
-        this.iron,
-        this.magnesium,
-        this.manganese,
-        this.molybdenum,
-        this.monounsaturatedFat,
-        this.niacin,
-        this.pantothenicAcid,
-        this.phosphorus,
-        this.polyunsaturatedFat,
-        this.potassium,
-        this.protein,
-        this.riboflavin,
-        this.saturatedFat,
-        this.selenium,
-        this.sodium,
-        this.sugar,
-        this.thiamin,
-        this.totalCarbohydrate,
-        this.totalFat,
-        this.transFat,
-        this.unsaturatedFat,
-        this.vitaminA,
-        this.vitaminB6,
-        this.vitaminB12,
-        this.vitaminC,
-        this.vitaminD,
-        this.vitaminE,
-        this.uID});
+      this.name,
+      this.vitaminK,
+      this.zinc,
+      this.biotin,
+      this.caffeine,
+      this.calcium,
+      this.chloride,
+      this.cholesterol,
+      this.chromium,
+      this.copper,
+      this.dietaryFiber,
+      this.energy,
+      this.energyFromFat,
+      this.folate,
+      this.folicAcid,
+      this.iodine,
+      this.iron,
+      this.magnesium,
+      this.manganese,
+      this.molybdenum,
+      this.monounsaturatedFat,
+      this.niacin,
+      this.pantothenicAcid,
+      this.phosphorus,
+      this.polyunsaturatedFat,
+      this.potassium,
+      this.protein,
+      this.riboflavin,
+      this.saturatedFat,
+      this.selenium,
+      this.sodium,
+      this.sugar,
+      this.thiamin,
+      this.totalCarbohydrate,
+      this.totalFat,
+      this.transFat,
+      this.unsaturatedFat,
+      this.vitaminA,
+      this.vitaminB6,
+      this.vitaminB12,
+      this.vitaminC,
+      this.vitaminD,
+      this.vitaminE,
+      this.uID,
+      this.healthDataType})
+      : super(uID ?? "", healthDataType);
 
-  factory HealthConnectNutrition.fromJson(Map<dynamic, dynamic> json) =>
+  factory HealthConnectNutrition.fromJson(
+          Map<dynamic, dynamic> json, HealthDataType type) =>
       HealthConnectNutrition(
-        DateFormat("DD MMM yyyy, HH:mm:ss").parse(json['startDateTime']),
-        DateFormat("DD MMM yyyy, HH:mm:ss").parse(json['endDateTime']),
+        DateTime.fromMillisecondsSinceEpoch(json['startDateTime'] * 1000),
+        DateTime.fromMillisecondsSinceEpoch(json['endDateTime'] * 1000),
         uID: json['uid'],
-        mealType: json.containsKey("mealType")
-            ? getMealType(json['mealType'])
-            : null,
+        healthDataType: type,
+        mealType:
+            json.containsKey("mealType") ? getMealType(json['mealType']) : null,
         name: json.containsKey("name") ? json['name'] : null,
         biotin: json.containsKey("biotin") ? Mass(json['biotin']) : null,
         caffeine: json.containsKey("caffeine") ? Mass(json['caffeine']) : null,
@@ -203,7 +208,7 @@ class HealthConnectNutrition {
             : null,
         chloride: json.containsKey("chloride") ? Mass(json['chloride']) : null,
         cholesterol:
-        json.containsKey("cholesterol") ? Mass(json['cholesterol']) : null,
+            json.containsKey("cholesterol") ? Mass(json['cholesterol']) : null,
         chromium: json.containsKey("chromium") ? Mass(json['chromium']) : null,
         copper: json.containsKey("copper") ? Mass(json['copper']) : null,
         dietaryFiber: json.containsKey("dietaryFiber")
@@ -211,15 +216,15 @@ class HealthConnectNutrition {
             : null,
         folate: json.containsKey("folate") ? Mass(json['folate']) : null,
         folicAcid:
-        json.containsKey("folicAcid") ? Mass(json['folicAcid']) : null,
+            json.containsKey("folicAcid") ? Mass(json['folicAcid']) : null,
         iodine: json.containsKey("iodine") ? Mass(json['iodine']) : null,
         iron: json.containsKey("iron") ? Mass(json['iron']) : null,
         magnesium:
-        json.containsKey("magnesium") ? Mass(json['magnesium']) : null,
+            json.containsKey("magnesium") ? Mass(json['magnesium']) : null,
         manganese:
-        json.containsKey("manganese") ? Mass(json['manganese']) : null,
+            json.containsKey("manganese") ? Mass(json['manganese']) : null,
         molybdenum:
-        json.containsKey("molybdenum") ? Mass(json['molybdenum']) : null,
+            json.containsKey("molybdenum") ? Mass(json['molybdenum']) : null,
         monounsaturatedFat: json.containsKey("monounsaturatedFat")
             ? Mass(json['monounsaturatedFat'])
             : null,
@@ -228,15 +233,15 @@ class HealthConnectNutrition {
             ? Mass(json['pantothenicAcid'])
             : null,
         phosphorus:
-        json.containsKey("phosphorus") ? Mass(json['phosphorus']) : null,
+            json.containsKey("phosphorus") ? Mass(json['phosphorus']) : null,
         polyunsaturatedFat: json.containsKey("polyunsaturatedFat")
             ? Mass(json['polyunsaturatedFat'])
             : null,
         potassium:
-        json.containsKey("potassium") ? Mass(json['potassium']) : null,
+            json.containsKey("potassium") ? Mass(json['potassium']) : null,
         protein: json.containsKey("protein") ? Mass(json['protein']) : null,
         riboflavin:
-        json.containsKey("riboflavin") ? Mass(json['riboflavin']) : null,
+            json.containsKey("riboflavin") ? Mass(json['riboflavin']) : null,
         saturatedFat: json.containsKey("saturatedFat")
             ? Mass(json['saturatedFat'])
             : null,
@@ -254,9 +259,9 @@ class HealthConnectNutrition {
             : null,
         vitaminA: json.containsKey("vitaminA") ? Mass(json['vitaminA']) : null,
         vitaminB12:
-        json.containsKey("vitaminB12") ? Mass(json['vitaminB12']) : null,
+            json.containsKey("vitaminB12") ? Mass(json['vitaminB12']) : null,
         vitaminB6:
-        json.containsKey("vitaminB6") ? Mass(json['vitaminB6']) : null,
+            json.containsKey("vitaminB6") ? Mass(json['vitaminB6']) : null,
         vitaminC: json.containsKey("vitaminC") ? Mass(json['vitaminC']) : null,
         vitaminD: json.containsKey("vitaminD") ? Mass(json['vitaminD']) : null,
         vitaminE: json.containsKey("vitaminE") ? Mass(json['vitaminE']) : null,
