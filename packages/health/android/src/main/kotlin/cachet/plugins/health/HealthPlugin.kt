@@ -1,16 +1,17 @@
 package cachet.plugins.health
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.util.Log
+import androidx.activity.*
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.NonNull
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat.startActivity
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.impl.converters.records.toProto
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -18,12 +19,16 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
 import androidx.health.connect.client.units.Percentage
-import androidx.health.connect.client.units.grams
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.*
+<<<<<<< Updated upstream
+=======
+import com.google.android.gms.fitness.request.DataDeleteRequest
+>>>>>>> Stashed changes
 import com.google.android.gms.fitness.request.DataReadRequest
+import com.google.android.gms.fitness.request.DataUpdateRequest
 import com.google.android.gms.fitness.request.SessionReadRequest
 import com.google.android.gms.fitness.result.DataReadResponse
 import com.google.android.gms.fitness.result.SessionReadResponse
@@ -41,7 +46,6 @@ import io.flutter.plugin.common.PluginRegistry.Registrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -53,6 +57,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
+
 
 const val GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 1111
 const val CHANNEL_NAME = "flutter_health"
@@ -169,6 +174,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 Log.d("FLUTTER_HEALTH", "Access Denied!")
                 mResult?.success(false)
             }
+        } else if (requestCode == 4572) {
+            mResult?.success(true);
         }
         return false
     }
@@ -242,6 +249,211 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    private fun deleteData(call: MethodCall, result: Result) {
+
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+        val type = call.argument<String>("dataTypeKey")!!
+        val startTime = call.argument<Long>("startTime")!!
+        val endTime = call.argument<Long>("endTime")!!
+
+        // Look up data type and unit for the type key
+        val dataType = keyToHealthDataType(type)
+
+        val typesBuilder = FitnessOptions.builder()
+        typesBuilder.addDataType(dataType, FitnessOptions.ACCESS_WRITE)
+
+        val fitnessOptions = typesBuilder.build()
+        try {
+            val googleSignInAccount =
+                GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+
+            val request = DataDeleteRequest.Builder()
+                .addDataType(dataType)
+                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                .build()
+
+            Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                .deleteData(request)
+                .addOnSuccessListener {
+                    Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet deleted successfully!")
+                    result.success(true)
+                }
+                .addOnFailureListener { e ->
+                    Log.w("FLUTTER_HEALTH::ERROR", "There was an error deleting the DataSet", e)
+                    result.success(false)
+                }
+        } catch (e3: Exception) {
+            result.success(false)
+        }
+    }
+
+    private fun deleteFoodData(call: MethodCall, result: Result) {
+
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+        val startTime = call.argument<Long>("startTime")!!
+        val endTime = call.argument<Long>("endTime")!!
+
+        val dataType = DataType.TYPE_NUTRITION
+
+        val typesBuilder = FitnessOptions.builder()
+        typesBuilder.addDataType(dataType, FitnessOptions.ACCESS_WRITE)
+
+        val fitnessOptions = typesBuilder.build()
+        try {
+            val googleSignInAccount =
+                GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+
+            val request = DataDeleteRequest.Builder()
+                .addDataType(dataType)
+                .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                .build()
+
+            Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                .deleteData(request)
+                .addOnSuccessListener {
+                    Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet deleted successfully!")
+                    result.success(true)
+                }
+                .addOnFailureListener { e ->
+                    Log.w("FLUTTER_HEALTH::ERROR", "There was an error deleting the DataSet", e)
+                    result.success(false)
+                }
+        } catch (e3: Exception) {
+            result.success(false)
+        }
+    }
+
+    private fun writeFoodData(call: MethodCall, result: Result) {
+
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+        val foodList = call.argument<List<HashMap<String, *>>>("foodList")!!
+        val startTime = call.argument<Long>("startTime")!!
+        val endTime = call.argument<Long>("endTime")!!
+        val overwrite = call.argument<Boolean>("overwrite")!!
+
+        Log.i("FLUTTER_HEALTH::SUCCESS", "Successfully called writeFoodData")
+
+        val field = Field.FIELD_NUTRIENTS
+        val dataType = DataType.TYPE_NUTRITION
+
+        val typesBuilder = FitnessOptions.builder()
+        typesBuilder.addDataType(dataType, FitnessOptions.ACCESS_WRITE)
+
+        val dataSource = DataSource.Builder()
+            .setDataType(dataType)
+            .setType(DataSource.TYPE_RAW)
+            .setDevice(Device.getLocalDevice(activity!!.applicationContext))
+            .setAppPackageName(activity!!.applicationContext)
+            .build()
+
+        val dataSetBuilder = DataSet.builder(dataSource)
+
+        for (food in foodList) {
+            val iterationFood = food.toMutableMap()
+
+            val timestamp = iterationFood["timestamp"] as Long
+            iterationFood.remove("timestamp")
+
+            val builder =
+                DataPoint.builder(dataSource).setTimestamp(timestamp, TimeUnit.MILLISECONDS)
+
+            val nutrients = mutableMapOf<String, Float>()
+
+            for ((nutrient, value) in iterationFood) {
+                val nutrientField = getNutrientField(nutrient)
+                nutrients[nutrientField] = value.toString().toFloat()
+            }
+
+            val dataPoint: DataPoint = builder.setField(field, nutrients).build()
+
+            dataSetBuilder.add(dataPoint)
+
+        }
+
+        val dataSet = dataSetBuilder.build()
+
+        val fitnessOptions = typesBuilder.build()
+        try {
+            val googleSignInAccount =
+                GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+
+            if (overwrite) {
+                val request = DataDeleteRequest.Builder()
+                    .addDataType(dataType)
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                    .build()
+
+                Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                    .deleteData(request)
+                    .addOnSuccessListener {
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet deleted successfully!")
+                        if (!dataSet.isEmpty) {
+                            Fitness.getHistoryClient(
+                                activity!!.applicationContext,
+                                googleSignInAccount
+                            )
+                                .insertData(dataSet)
+                                .addOnSuccessListener {
+                                    Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                                    result.success(true)
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.w(
+                                        "FLUTTER_HEALTH::ERROR",
+                                        "There was an error adding the DataSet",
+                                        e
+                                    )
+                                    result.success(false)
+                                }
+                        } else {
+                            Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet was empty!")
+                            result.success(true)
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error deleting the DataSet", e)
+                    }
+            } else {
+                if (!dataSet.isEmpty) {
+                    Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                        .insertData(dataSet)
+                        .addOnSuccessListener {
+                            Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                            result.success(true)
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w(
+                                "FLUTTER_HEALTH::ERROR",
+                                "There was an error adding the DataSet",
+                                e
+                            )
+                            result.success(false)
+                        }
+                } else {
+                    Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet was empty!")
+                    result.success(true)
+                }
+            }
+        } catch (e3: Exception) {
+            result.success(false)
+        }
+    }
+
+>>>>>>> Stashed changes
     private fun writeData(call: MethodCall, result: Result) {
 
         if (activity == null) {
@@ -253,6 +465,10 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val startTime = call.argument<Long>("startTime")!!
         val endTime = call.argument<Long>("endTime")!!
         val value = call.argument<Float>("value")!!
+<<<<<<< Updated upstream
+=======
+        val overwrite = call.argument<Boolean>("overwrite")!!
+>>>>>>> Stashed changes
 
         // Look up data type and unit for the type key
         val dataType = keyToHealthDataType(type)
@@ -278,10 +494,27 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         // Conversion is needed because glucose is stored as mmoll in Google Fit;
         // while mgdl is used for glucose in this plugin.
         val isGlucose = field == HealthFields.FIELD_BLOOD_GLUCOSE_LEVEL
+<<<<<<< Updated upstream
         val dataPoint = if (!isIntField(dataSource, field))
             builder.setField(field, if (!isGlucose) value else (value / MMOLL_2_MGDL).toFloat())
                 .build() else
             builder.setField(field, value.toInt()).build()
+=======
+        val isNutrition = field == Field.FIELD_NUTRIENTS
+
+        val dataPoint: DataPoint = if (isNutrition) {
+            val nutrientField = getNutrientField(type)
+            val nutrients = mapOf(
+                nutrientField to value
+            )
+            builder.setField(field, nutrients).build()
+        } else {
+            if (!isIntField(dataSource, field))
+                builder.setField(field, if (!isGlucose) value else (value / MMOLL_2_MGDL).toFloat())
+                    .build() else
+                builder.setField(field, value.toInt()).build()
+        }
+>>>>>>> Stashed changes
 
         val dataSet = DataSet.builder(dataSource)
             .add(dataPoint)
@@ -294,6 +527,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         try {
             val googleSignInAccount =
                 GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
+<<<<<<< Updated upstream
             Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
                 .insertData(dataSet)
                 .addOnSuccessListener {
@@ -304,6 +538,37 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                     Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
                     result.success(false)
                 }
+=======
+
+            if (overwrite) {
+                val request = DataUpdateRequest.Builder()
+                    .setDataSet(dataSet)
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                    .build()
+
+                Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                    .updateData(request)
+                    .addOnSuccessListener {
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                        result.success(true)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
+                        result.success(false)
+                    }
+            } else {
+                Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
+                    .insertData(dataSet)
+                    .addOnSuccessListener {
+                        Log.i("FLUTTER_HEALTH::SUCCESS", "DataSet added successfully!")
+                        result.success(true)
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
+                        result.success(false)
+                    }
+            }
+>>>>>>> Stashed changes
         } catch (e3: Exception) {
             result.success(false)
         }
@@ -643,7 +908,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                         val uid = it.metadata.uid
                         val hashMapData = hashMapOf<String, Any>(
                             "startDateTime" to startZonedDateTime.toEpochSecond(),
-                            "endDateTime" to  endZonedDateTime.toEpochSecond(),
+                            "endDateTime" to endZonedDateTime.toEpochSecond(),
                             "uid" to uid,
                         )
                         if (it.biotin != null) {
@@ -1168,11 +1433,31 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 GoogleSignIn.getLastSignedInAccount(activity),
                 optionsToRegister
             )
+<<<<<<< Updated upstream
+=======
+            Log.i("FLUTTER_HEALTH::SUCCESS", "Ask permission!")
+>>>>>>> Stashed changes
         }
         /// Permission already granted
         else {
             mResult?.success(true)
         }
+    }
+
+    private fun requestHealthConnectPermission(call: MethodCall, result: Result) {
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        val permissionList = callToHealthConnectTypes(call)
+
+        val intent =
+            healthConnectClient.permissionController.createRequestPermissionActivityContract()
+                .createIntent(activity!!.applicationContext, permissionList)
+        activity!!.startActivityForResult(intent, 4572)
+        result.success(intent.toString())
     }
 
     private fun getTotalStepsInInterval(call: MethodCall, result: Result) {
@@ -1264,6 +1549,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "writeDataHealthConnect" -> writeDataHealthConnect(call, result)
             "getHealthConnectData" -> getHealthConnectData(call, result)
             "deleteHealthConnectData" -> deleteHealthConnectData(call, result)
+            "requestHealthConnectPermission" -> requestHealthConnectPermission(call, result)
             else -> result.notImplemented()
         }
     }

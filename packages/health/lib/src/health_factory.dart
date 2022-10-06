@@ -49,8 +49,12 @@ class HealthFactory {
   ///   with a READ or READ_WRITE access.
   ///
   ///   On Android, this function returns true or false, depending on whether the specified access right has been granted.
+<<<<<<< Updated upstream
   static Future<bool?> hasPermissions(
       List<HealthDataType> types, bool isDataFromHealthConnect,
+=======
+  static Future<bool?> hasPermissions(List<HealthDataType> types,
+>>>>>>> Stashed changes
       {List<HealthDataAccess>? permissions}) async {
     if (permissions != null && permissions.length != types.length)
       throw ArgumentError(
@@ -61,7 +65,7 @@ class HealthFactory {
             growable: true)
         : permissions.map((permission) => permission.index).toList();
 
-    if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
+    /*if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
       try {
         var value = await _channel.invokeMethod('hasPermissionsHealthConnect', {
           "types": mTypes.map((type) => _enumToString(type)).toList(),
@@ -72,6 +76,7 @@ class HealthFactory {
       } on PlatformException catch (e) {
         return null;
       }
+<<<<<<< Updated upstream
     }
 
     /// On Android, if BMI is requested, then also ask for weight and height
@@ -81,6 +86,45 @@ class HealthFactory {
       "types": mTypes.map((type) => _enumToString(type)).toList(),
       "permissions": mPermissions,
     });
+=======
+    } else {*/
+
+    /// On Android, if BMI is requested, then also ask for weight and height
+    if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);
+
+    return await _channel.invokeMethod('hasPermissions', {
+      "types": mTypes.map((type) => _enumToString(type)).toList(),
+      "permissions": mPermissions,
+    });
+    //}
+  }
+
+  Future<bool> requestHealthConnectPermission(
+    List<HealthDataType> types, {
+    List<HealthDataAccess>? permissions,
+  }) async {
+    if (permissions != null && permissions.length != types.length) {
+      throw ArgumentError(
+          'The length of [types] must be same as that of [permissions].');
+    }
+
+    if (_platformType != PlatformType.ANDROID) {
+      return false;
+    }
+
+    final mTypes = List<HealthDataType>.from(types, growable: true);
+    final mPermissions = permissions == null
+        ? List<int>.filled(types.length, HealthDataAccess.READ.index,
+        growable: true)
+        : permissions.map((permission) => permission.index).toList();
+
+    List<String> keys = mTypes.map((e) => _enumToString(e)).toList();
+    final String? isAuthorized = await _channel.invokeMethod(
+        'requestHealthConnectPermission', {'types': keys, "permissions": mPermissions});
+    print("${isAuthorized}");
+    //return isAuthorized ?? false;
+    return false;
+>>>>>>> Stashed changes
   }
 
   /// Request permissions.
@@ -88,7 +132,9 @@ class HealthFactory {
   /// If you're using more than one [HealthDataType] it's advised to call
   /// [requestPermissions] with all the data types once. Otherwise iOS HealthKit
   /// will ask to approve every permission one by one in separate screens.
-  static Future<bool?> requestPermissions(List<HealthDataType> types) async {
+  static Future<bool?> requestPermissions(
+    List<HealthDataType> types,
+  ) async {
     return await _channel.invokeMethod('requestPermissions', {
       "types": types.map((type) => _enumToString(type)).toList(),
     });
@@ -119,6 +165,7 @@ class HealthFactory {
     if (permissions != null && permissions.length != types.length) {
       throw ArgumentError(
           'The length of [types] must be same as that of [permissions].');
+<<<<<<< Updated upstream
     }
 
     final mTypes = List<HealthDataType>.from(types, growable: true);
@@ -126,6 +173,43 @@ class HealthFactory {
         ? List<int>.filled(types.length, HealthDataAccess.READ.index,
             growable: true)
         : permissions.map((permission) => permission.index).toList();
+=======
+    }
+
+    if (_platformType != PlatformType.ANDROID &&
+        _platformType != PlatformType.IOS) {
+      return false;
+    }
+
+    List<HealthDataType> usableTypes = [];
+    List<HealthDataAccess>? usablePermissions = permissions == null ? null : [];
+
+    var platformDataTypeKeys = _platformType == PlatformType.ANDROID
+        ? _dataTypeKeysAndroid
+        : _dataTypeKeysIOS;
+
+    // Only use supplied types and permissions if they are valid for the current platform
+    for (var i = 0; i < types.length; i++) {
+      var typeToCheck = types[i];
+
+      if (platformDataTypeKeys.contains(typeToCheck)) {
+        usableTypes.add(typeToCheck);
+        if (permissions != null && usablePermissions != null) {
+          usablePermissions.add(permissions[i]);
+        }
+      }
+    }
+
+    if (usableTypes.isEmpty) {
+      return false;
+    }
+
+    final mTypes = List<HealthDataType>.from(usableTypes, growable: true);
+    final mPermissions = usablePermissions == null
+        ? List<int>.filled(usableTypes.length, HealthDataAccess.READ.index,
+            growable: true)
+        : usablePermissions.map((permission) => permission.index).toList();
+>>>>>>> Stashed changes
 
     // on Android, if BMI is requested, then also ask for weight and height
     if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);
@@ -258,6 +342,60 @@ class HealthFactory {
     return success ?? false;
   }
 
+<<<<<<< Updated upstream
+=======
+  Future<bool> writeFoodData(
+      List<Map> foodList, DateTime startTime, DateTime endTime,
+      {bool overwrite = false}) async {
+    if (startTime.isAfter(endTime))
+      throw ArgumentError("startTime must be equal or earlier than endTime");
+    Map<String, dynamic> args = {
+      'foodList': foodList,
+      'startTime': startTime.millisecondsSinceEpoch,
+      'endTime': endTime.millisecondsSinceEpoch,
+      'overwrite': overwrite
+    };
+    bool? success = await _channel.invokeMethod('writeFoodData', args);
+    return success ?? false;
+  }
+
+  /// Saves health data into Apple Health or Google Fit.
+  ///
+  /// Returns true if successful, false otherwise.
+  ///
+  /// Parameters:
+  /// * [type] - the value's HealthDataType
+  /// * [startTime] - the start time from which to delete data of [type].
+  ///   + It must be equal to or earlier than [endTime].
+  /// * [endTime] - the end time from which to delete data of [type].
+  ///   + It must be equal to or later than [startTime].
+  ///   + Simply set [endTime] equal to [startTime] if the [value] is measured only at a specific point in time.
+  ///
+  Future<bool> deleteHealthData(
+      HealthDataType type, DateTime startTime, DateTime endTime) async {
+    if (startTime.isAfter(endTime))
+      throw ArgumentError("startTime must be equal or earlier than endTime");
+    Map<String, dynamic> args = {
+      'dataTypeKey': _enumToString(type),
+      'startTime': startTime.millisecondsSinceEpoch,
+      'endTime': endTime.millisecondsSinceEpoch,
+    };
+    bool? success = await _channel.invokeMethod('deleteData', args);
+    return success ?? false;
+  }
+
+  Future<bool> deleteFoodData(DateTime startTime, DateTime endTime) async {
+    if (startTime.isAfter(endTime))
+      throw ArgumentError("startTime must be equal or earlier than endTime");
+    Map<String, dynamic> args = {
+      'startTime': startTime.millisecondsSinceEpoch,
+      'endTime': endTime.millisecondsSinceEpoch,
+    };
+    bool? success = await _channel.invokeMethod('deleteFoodData', args);
+    return success ?? false;
+  }
+
+>>>>>>> Stashed changes
   Future<List<HealthConnectData>> getHealthConnectData(
       DateTime startDate, DateTime endDate, HealthDataType type) async {
     if (_platformType == PlatformType.ANDROID) {
@@ -279,15 +417,22 @@ class HealthFactory {
       if (success.length > 0) {
         if (type == HealthDataType.WEIGHT) {
           return success.map<HealthConnectWeight>((e) {
-            return HealthConnectWeight.fromJson(e as Map<dynamic, dynamic>, type);
+            return HealthConnectWeight.fromJson(
+                e as Map<dynamic, dynamic>, type);
           }).toList();
         } else if (type == HealthDataType.BODYFAT) {
           return success.map<HealthConnectBodyFat>((e) {
-            return HealthConnectBodyFat.fromJson(e as Map<dynamic, dynamic>, type);
+            return HealthConnectBodyFat.fromJson(
+                e as Map<dynamic, dynamic>, type);
           }).toList();
         } else if (type == HealthDataType.NUTRITION) {
           return success.map<HealthConnectNutrition>((e) {
+<<<<<<< Updated upstream
             return HealthConnectNutrition.fromJson(e as Map<dynamic, dynamic>,type);
+=======
+            return HealthConnectNutrition.fromJson(
+                e as Map<dynamic, dynamic>, type);
+>>>>>>> Stashed changes
           }).toList();
         }
       }

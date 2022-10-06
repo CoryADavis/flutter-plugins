@@ -411,6 +411,30 @@ class _HealthAppState extends State<HealthApp> {
     return _contentNotFetched();
   }
 
+  requestHealthConnectPermission() async {
+// define the types to get
+    final types = [
+      HealthDataType.WEIGHT,
+      HealthDataType.BODYFAT,
+      HealthDataType.NUTRITION,
+      HealthDataType.WEIGHT,
+      HealthDataType.BODYFAT,
+      HealthDataType.NUTRITION,
+    ];
+
+    // with coresponsing permissions
+    final permissions = [
+      HealthDataAccess.READ,
+      HealthDataAccess.READ,
+      HealthDataAccess.READ,
+      HealthDataAccess.WRITE,
+      HealthDataAccess.WRITE,
+      HealthDataAccess.WRITE,
+    ];
+    bool requested =
+        await health.requestHealthConnectPermission(types, permissions: permissions);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -444,6 +468,18 @@ class _HealthAppState extends State<HealthApp> {
               SingleChildScrollView(
                 child: Column(
                   children: [
+                    ElevatedButton(
+                        onPressed: () {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
+                            requestHealthConnectPermission();
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text("Request Permission")),
                     ElevatedButton(
                         onPressed: () {
                           if (androidDataSource ==
