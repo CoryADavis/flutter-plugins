@@ -2,18 +2,23 @@ package cachet.plugins.health
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import androidx.activity.*
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.NonNull
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
-import androidx.core.content.ContextCompat.startActivity
+import androidx.core.app.ActivityCompat
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.impl.converters.permission.toProtoPermission
 import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.*
+import androidx.health.connect.client.records.BodyFatRecord
+import androidx.health.connect.client.records.NutritionRecord
+import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
@@ -23,10 +28,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.fitness.Fitness
 import com.google.android.gms.fitness.FitnessOptions
 import com.google.android.gms.fitness.data.*
-<<<<<<< Updated upstream
-=======
 import com.google.android.gms.fitness.request.DataDeleteRequest
->>>>>>> Stashed changes
 import com.google.android.gms.fitness.request.DataReadRequest
 import com.google.android.gms.fitness.request.DataUpdateRequest
 import com.google.android.gms.fitness.request.SessionReadRequest
@@ -56,6 +58,7 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 import kotlin.reflect.KClass
 
 
@@ -175,7 +178,16 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 mResult?.success(false)
             }
         } else if (requestCode == 4572) {
-            mResult?.success(true);
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d("FLUTTER_HEALTH", "Access Granted!123")
+                mResult?.success(true)
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                Log.d("FLUTTER_HEALTH", "Access Denied!123")
+                mResult?.success(false)
+            } else if (resultCode == Activity.RESULT_FIRST_USER) {
+                Log.d("FLUTTER_HEALTH", "Access Denied!!")
+                mResult?.success(false)
+            }
         }
         return false
     }
@@ -249,8 +261,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
-<<<<<<< Updated upstream
-=======
     private fun deleteData(call: MethodCall, result: Result) {
 
         if (activity == null) {
@@ -374,8 +384,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             val nutrients = mutableMapOf<String, Float>()
 
             for ((nutrient, value) in iterationFood) {
-                val nutrientField = getNutrientField(nutrient)
-                nutrients[nutrientField] = value.toString().toFloat()
+                /*val nutrientField = getNutrientField(nutrient)
+                nutrients[nutrientField] = value.toString().toFloat()*/
             }
 
             val dataPoint: DataPoint = builder.setField(field, nutrients).build()
@@ -453,7 +463,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
     }
 
->>>>>>> Stashed changes
     private fun writeData(call: MethodCall, result: Result) {
 
         if (activity == null) {
@@ -465,10 +474,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val startTime = call.argument<Long>("startTime")!!
         val endTime = call.argument<Long>("endTime")!!
         val value = call.argument<Float>("value")!!
-<<<<<<< Updated upstream
-=======
+
         val overwrite = call.argument<Boolean>("overwrite")!!
->>>>>>> Stashed changes
 
         // Look up data type and unit for the type key
         val dataType = keyToHealthDataType(type)
@@ -494,15 +501,13 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         // Conversion is needed because glucose is stored as mmoll in Google Fit;
         // while mgdl is used for glucose in this plugin.
         val isGlucose = field == HealthFields.FIELD_BLOOD_GLUCOSE_LEVEL
-<<<<<<< Updated upstream
         val dataPoint = if (!isIntField(dataSource, field))
             builder.setField(field, if (!isGlucose) value else (value / MMOLL_2_MGDL).toFloat())
                 .build() else
             builder.setField(field, value.toInt()).build()
-=======
         val isNutrition = field == Field.FIELD_NUTRIENTS
 
-        val dataPoint: DataPoint = if (isNutrition) {
+        /*val dataPoint: DataPoint = if (isNutrition) {
             val nutrientField = getNutrientField(type)
             val nutrients = mapOf(
                 nutrientField to value
@@ -513,8 +518,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 builder.setField(field, if (!isGlucose) value else (value / MMOLL_2_MGDL).toFloat())
                     .build() else
                 builder.setField(field, value.toInt()).build()
-        }
->>>>>>> Stashed changes
+        }*/
 
         val dataSet = DataSet.builder(dataSource)
             .add(dataPoint)
@@ -527,7 +531,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         try {
             val googleSignInAccount =
                 GoogleSignIn.getAccountForExtension(activity!!.applicationContext, fitnessOptions)
-<<<<<<< Updated upstream
+
             Fitness.getHistoryClient(activity!!.applicationContext, googleSignInAccount)
                 .insertData(dataSet)
                 .addOnSuccessListener {
@@ -538,7 +542,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                     Log.w("FLUTTER_HEALTH::ERROR", "There was an error adding the DataSet", e)
                     result.success(false)
                 }
-=======
 
             if (overwrite) {
                 val request = DataUpdateRequest.Builder()
@@ -568,7 +571,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                         result.success(false)
                     }
             }
->>>>>>> Stashed changes
         } catch (e3: Exception) {
             result.success(false)
         }
@@ -1358,10 +1360,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         }
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
         val permissionList = callToHealthConnectTypes(call)
-        /*val intent = healthConnectClient.permissionController.createRequestPermissionActivityContract()
-            .createIntent(activity!!.applicationContext, permissionList)
-
-        activity!!.startActivityForResult(intent,1111)*/
         mResult = result
 
         checkAvailability()
@@ -1375,7 +1373,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             mResult?.success(
                 healthConnectClient.permissionController.getGrantedPermissions(
                     permissionList.toSet()
-                ).toString()
+                ) == permissionList
             )
         }
     }
@@ -1433,10 +1431,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 GoogleSignIn.getLastSignedInAccount(activity),
                 optionsToRegister
             )
-<<<<<<< Updated upstream
-=======
             Log.i("FLUTTER_HEALTH::SUCCESS", "Ask permission!")
->>>>>>> Stashed changes
         }
         /// Permission already granted
         else {
@@ -1457,8 +1452,10 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             healthConnectClient.permissionController.createRequestPermissionActivityContract()
                 .createIntent(activity!!.applicationContext, permissionList)
         activity!!.startActivityForResult(intent, 4572)
-        result.success(intent.toString())
+
+        //result.success(intent.toString())
     }
+
 
     private fun getTotalStepsInInterval(call: MethodCall, result: Result) {
         val start = call.argument<Long>("startDate")!!
