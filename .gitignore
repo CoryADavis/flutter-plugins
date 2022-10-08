@@ -130,3 +130,5 @@ packages/mobility_features/example/.flutter-plugins-dependencies
 packages/health/example/.flutter-plugins-dependencies
 packages/health/example/.flutter-plugins-dependencies
 packages/health/example/ios/Flutter/flutter_export_environment.sh
+.flutter-plugins-dependencies
+flutter_export_environment.sh
