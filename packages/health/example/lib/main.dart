@@ -433,6 +433,7 @@ class _HealthAppState extends State<HealthApp> {
     ];
     bool requested = await health.requestHealthConnectPermissions(types,
         permissions: permissions);
+    Fluttertoast.showToast(msg: "Access Already Granted $requested");
     return requested;
   }
 

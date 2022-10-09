@@ -193,15 +193,19 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 mResult?.success(false)
             }
         } else if (requestCode == HEALTH_CONNECT_PERMISSIONS_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                Log.d("FLUTTER_HEALTH", "Access Granted!123")
-                mResult?.success(true)
-            } else if (resultCode == Activity.RESULT_CANCELED) {
-                Log.d("FLUTTER_HEALTH", "Access Denied!123")
-                mResult?.success(false)
-            } else if (resultCode == Activity.RESULT_FIRST_USER) {
-                Log.d("FLUTTER_HEALTH", "Access Denied!!")
-                mResult?.success(false)
+            when (resultCode) {
+                Activity.RESULT_OK -> {
+                    Log.d("FLUTTER_HEALTH", "Access Granted!123")
+                    mResult?.success(true)
+                }
+                Activity.RESULT_CANCELED -> {
+                    Log.d("FLUTTER_HEALTH", "Access Denied!123")
+                    mResult?.success(false)
+                }
+                Activity.RESULT_FIRST_USER -> {
+                    Log.d("FLUTTER_HEALTH", "Access Denied!!")
+                    mResult?.success(false)
+                }
             }
         }
         return false
@@ -607,6 +611,8 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
         val type = call.argument<String>("dataTypeKey")!!
 
+        mResult = result
+
         var records = emptyList<Record>()
         when (type) {
             WEIGHT -> {
@@ -833,6 +839,9 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val type = call.argument<String>("dataTypeKey")!!
         val startDate = call.argument<String>("startDate")!!
         val endDate = call.argument<String>("endDate")!!
+
+        mResult = result
+
         when (type) {
             WEIGHT -> {
                 val startDate = ZonedDateTime.parse(
@@ -1089,6 +1098,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
         val type = call.argument<String>("dataTypeKey")!!
         val uID = call.argument<String>("uID")!!
+        mResult = result
         if (type == WEIGHT) {
             CoroutineScope(Dispatchers.Main).launch {
                 healthConnectClient.deleteRecords(
@@ -1461,7 +1471,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             result.success(false)
             return
         }
-
+        mResult = result
         val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
         val permissionList = callToHealthConnectTypes(call)
 
