@@ -868,11 +868,11 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                         val zonedDateTime =
                             dateTimeWithOffsetOrDefault(it.time, it.zoneOffset)
                         val uid = it.metadata.uid
-                        val weight = it.weight
+                        val weight = it.weight.inGrams
                         return@mapIndexed hashMapOf(
                             "zonedDateTime" to formatter.format(zonedDateTime),
                             "uid" to uid,
-                            "weight" to "$weight "
+                            "weight" to weight
                         )
                     }
                     activity!!.runOnUiThread { result.success(healthData) }
@@ -907,7 +907,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                         return@mapIndexed hashMapOf(
                             "zonedDateTime" to formatter.format(zonedDateTime),
                             "uid" to uid,
-                            "bodyFat" to "$bodyFat "
+                            "bodyFat" to bodyFat
                         )
                     }
                     activity!!.runOnUiThread { result.success(healthData) }
@@ -1405,7 +1405,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
 
     private var availability = mutableStateOf(HealthConnectAvailability.NOT_SUPPORTED)
 
-    private fun checkAvailability(call: MethodCall, result: Result) {
+    private fun isHealthConnectAvailable(call: MethodCall, result: Result) {
         availability.value = when {
             HealthConnectClient.isAvailable(activity!!.applicationContext) -> HealthConnectAvailability.INSTALLED
             isSupported() -> HealthConnectAvailability.NOT_INSTALLED
@@ -1575,7 +1575,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "getHealthConnectData" -> getHealthConnectData(call, result)
             "deleteHealthConnectData" -> deleteHealthConnectData(call, result)
             "requestHealthConnectPermission" -> requestHealthConnectPermission(call, result)
-            "checkHealthConnectAvailability" -> checkAvailability(call, result)
+            "isHealthConnectAvailable" -> isHealthConnectAvailable(call, result)
             else -> result.notImplemented()
         }
     }
