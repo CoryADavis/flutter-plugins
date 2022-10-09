@@ -431,7 +431,7 @@ class _HealthAppState extends State<HealthApp> {
       HealthDataAccess.WRITE,
       HealthDataAccess.WRITE,
     ];
-    bool requested = await health.requestHealthConnectPermission(types,
+    bool requested = await health.requestHealthConnectPermissions(types,
         permissions: permissions);
     return requested;
   }
@@ -457,7 +457,7 @@ class _HealthAppState extends State<HealthApp> {
       HealthDataAccess.WRITE,
     ];
 
-    bool hasPermission = await health.hasHealthConnectPermission(types,
+    bool hasPermission = await health.hasHealthConnectPermissions(types,
         permissions: permissions);
     if (hasPermission) {
       Fluttertoast.showToast(msg: "Access Already Granted");

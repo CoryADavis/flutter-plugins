@@ -70,7 +70,7 @@ class HealthFactory {
     //}
   }
 
-  Future<bool> requestHealthConnectPermission(
+  Future<bool> requestHealthConnectPermissions(
     List<HealthDataType> types, {
     List<HealthDataAccess>? permissions,
   }) async {
@@ -99,10 +99,11 @@ class HealthFactory {
 
   /// Determines if the data types have been granted with the specified access rights.
   /// To Check Health Connect Granted Permission
-  Future<bool> hasHealthConnectPermission(
+  Future<bool> hasHealthConnectPermissions(
     List<HealthDataType> types, {
     List<HealthDataAccess>? permissions,
   }) async {
+    //TODO:[RUTUL] Types other then supported should throw warning.
     if (permissions != null && permissions.length != types.length) {
       throw ArgumentError(
           'The length of [types] must be same as that of [permissions].');
@@ -125,7 +126,8 @@ class HealthFactory {
     return isAuthorized ?? false;
   }
 
-  /// To Check Health Connect Availability
+  /// To Check Health Connect app is installed on the device.
+  /// Without the app, permissions won't work.
   Future<bool> checkHealthConnectAvailability() async {
     final bool? isAvailable = await _channel.invokeMethod(
       'checkHealthConnectAvailability',
@@ -262,6 +264,11 @@ class HealthFactory {
     return bmiHealthPoints;
   }
 
+  ///TODO: [RUTUL] Improve Documentation to mention it also supports HealthConnect
+  ///And also how to handle [HealthConnectNutrition]
+  ///
+  ///TODO: [RUTUL] Seperate Function for Nutrition
+
   /// Saves health data into Apple Health or Google Fit.
   ///
   /// Returns true if successful, false otherwise.
@@ -274,7 +281,6 @@ class HealthFactory {
   /// * [endTime] - the end time when this [value] is measured.
   ///   + It must be equal to or later than [startTime].
   ///   + Simply set [endTime] equal to [startTime] if the [value] is measured only at a specific point in time.
-  ///
   Future<bool> writeHealthData(
     HealthDataType type, {
     DateTime? startTime,
@@ -431,6 +437,7 @@ class HealthFactory {
     throw ArgumentError("This method will only work with Android.");
   }
 
+  ///TODO: [RUTUL] Seperate all health connect functions, abbreviate to HC, and put at end of class.
   /// Delete Health Connect entries using [uID] & [type]
   Future<bool> deleteHealthConnectData(HealthDataType type, String uID) async {
     if (_platformType == PlatformType.ANDROID) {

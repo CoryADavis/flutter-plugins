@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/Users/rutulchauhan/development/flutter"
-export "FLUTTER_APPLICATION_PATH=/Users/rutulchauhan/WorkSpace/flutter-plugins-health/packages/health/example"
+export "FLUTTER_ROOT=/Users/samyak/Documents/dev_envs/flutter"
+export "FLUTTER_APPLICATION_PATH=/Users/samyak/Documents/clients/Cloud 3/flutter-plugins-health/packages/health/example"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"
@@ -10,4 +10,4 @@ export "FLUTTER_BUILD_NUMBER=3.4.0"
 export "DART_OBFUSCATION=false"
 export "TRACK_WIDGET_CREATION=false"
 export "TREE_SHAKE_ICONS=false"
-export "PACKAGE_CONFIG=.dart_tool/package_config.json"
+export "PACKAGE_CONFIG=.packages"

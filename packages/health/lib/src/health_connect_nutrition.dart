@@ -1,5 +1,6 @@
 part of health;
 
+///TODO: [uiD] and [healthDataType] shouldn't be repeated.
 class HealthConnectNutrition extends HealthConnectData {
   final HealthDataType? healthDataType;
 
