@@ -459,7 +459,22 @@ class _HealthAppState extends State<HealthApp> {
 
     bool hasPermission = await health.hasHealthConnectPermission(types,
         permissions: permissions);
+    if (hasPermission) {
+      Fluttertoast.showToast(msg: "Access Already Granted");
+    } else {
+      Fluttertoast.showToast(
+          msg: "Permission not granted. Please ask for permission");
+    }
     return hasPermission;
+  }
+
+  checkAvailability() async {
+    bool isAvailable = await health.checkHealthConnectAvailability();
+    if (isAvailable) {
+      Fluttertoast.showToast(msg: "Health Connect is Available");
+    } else {
+      Fluttertoast.showToast(msg: "Health Connect is Not Available");
+    }
   }
 
   @override
@@ -495,6 +510,18 @@ class _HealthAppState extends State<HealthApp> {
               SingleChildScrollView(
                 child: Column(
                   children: [
+                    ElevatedButton(
+                        onPressed: () {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
+                            checkAvailability();
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text("Check HealthConnect Availability")),
                     ElevatedButton(
                         onPressed: () {
                           if (androidDataSource ==

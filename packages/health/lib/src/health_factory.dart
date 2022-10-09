@@ -60,30 +60,6 @@ class HealthFactory {
             growable: true)
         : permissions.map((permission) => permission.index).toList();
 
-    /*if (isDataFromHealthConnect && _platformType == PlatformType.ANDROID) {
-      try {
-        var value = await _channel.invokeMethod('hasPermissionsHealthConnect', {
-          "types": mTypes.map((type) => _enumToString(type)).toList(),
-          "permissions": mPermissions,
-        });
-        print(value);
-        return false;
-      } on PlatformException catch (e) {
-        return null;
-      }
-<<<<<<< Updated upstream
-    }
-
-    /// On Android, if BMI is requested, then also ask for weight and height
-    if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);
-
-    return await _channel.invokeMethod('hasPermissions', {
-      "types": mTypes.map((type) => _enumToString(type)).toList(),
-      "permissions": mPermissions,
-    });
-=======
-    } else {*/
-
     /// On Android, if BMI is requested, then also ask for weight and height
     if (_platformType == PlatformType.ANDROID) _handleBMI(mTypes, mPermissions);
 
@@ -121,10 +97,12 @@ class HealthFactory {
     return isAuthorized ?? false;
   }
 
+  /// Determines if the data types have been granted with the specified access rights.
+  /// To Check Health Connect Granted Permission
   Future<bool> hasHealthConnectPermission(
-      List<HealthDataType> types, {
-        List<HealthDataAccess>? permissions,
-      }) async {
+    List<HealthDataType> types, {
+    List<HealthDataAccess>? permissions,
+  }) async {
     if (permissions != null && permissions.length != types.length) {
       throw ArgumentError(
           'The length of [types] must be same as that of [permissions].');
@@ -137,15 +115,22 @@ class HealthFactory {
     final mTypes = List<HealthDataType>.from(types, growable: true);
     final mPermissions = permissions == null
         ? List<int>.filled(types.length, HealthDataAccess.READ.index,
-        growable: true)
+            growable: true)
         : permissions.map((permission) => permission.index).toList();
 
     List<String> keys = mTypes.map((e) => _enumToString(e)).toList();
     final bool? isAuthorized = await _channel.invokeMethod(
         'hasPermissionsHealthConnect',
         {'types': keys, "permissions": mPermissions});
-    print("Rutul Chauhan $isAuthorized");
-    return /*isAuthorized ??*/ false;
+    return isAuthorized ?? false;
+  }
+
+  /// To Check Health Connect Availability
+  Future<bool> checkHealthConnectAvailability() async {
+    final bool? isAvailable = await _channel.invokeMethod(
+      'checkHealthConnectAvailability',
+    );
+    return isAvailable ?? false;
   }
 
   /// Request permissions.
@@ -404,6 +389,7 @@ class HealthFactory {
     return success ?? false;
   }
 
+  /// To get Health Connect Data by [HealthTypeData]
   Future<List<HealthConnectData>> getHealthConnectData(
       DateTime startDate, DateTime endDate, HealthDataType type) async {
     if (_platformType == PlatformType.ANDROID) {
@@ -445,6 +431,7 @@ class HealthFactory {
     throw ArgumentError("This method will only work with Android.");
   }
 
+  /// Delete Health Connect entries using [uID] & [type]
   Future<bool> deleteHealthConnectData(HealthDataType type, String uID) async {
     if (_platformType == PlatformType.ANDROID) {
       if (uID.isEmpty) throw ArgumentError("uID must be not null");

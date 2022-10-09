@@ -3,17 +3,12 @@ package cachet.plugins.health
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
-import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.NonNull
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
-import androidx.core.app.ActivityCompat
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.impl.converters.permission.toProtoPermission
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BodyFatRecord
 import androidx.health.connect.client.records.NutritionRecord
@@ -1362,13 +1357,6 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
         val permissionList = callToHealthConnectTypes(call)
         mResult = result
 
-        checkAvailability()
-
-        if (availability.equals(HealthConnectAvailability.NOT_SUPPORTED)) {
-            mResult?.success(false)
-            return
-        }
-
         CoroutineScope(Dispatchers.Main).launch {
             mResult?.success(
                 healthConnectClient.permissionController.getGrantedPermissions(
@@ -1380,12 +1368,13 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
 
     private var availability = mutableStateOf(HealthConnectAvailability.NOT_SUPPORTED)
 
-    private fun checkAvailability() {
+    private fun checkAvailability(call: MethodCall, result: Result) {
         availability.value = when {
             HealthConnectClient.isAvailable(activity!!.applicationContext) -> HealthConnectAvailability.INSTALLED
             isSupported() -> HealthConnectAvailability.NOT_INSTALLED
             else -> HealthConnectAvailability.NOT_SUPPORTED
         }
+        result.success(HealthConnectClient.isAvailable(activity!!.applicationContext))
     }
 
     @ChecksSdkIntAtLeast(api = MIN_SUPPORTED_SDK)
@@ -1547,6 +1536,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "getHealthConnectData" -> getHealthConnectData(call, result)
             "deleteHealthConnectData" -> deleteHealthConnectData(call, result)
             "requestHealthConnectPermission" -> requestHealthConnectPermission(call, result)
+            "checkHealthConnectAvailability" -> checkAvailability(call, result)
             else -> result.notImplemented()
         }
     }
