@@ -47,6 +47,37 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
     let SLEEP_AWAKE = "SLEEP_AWAKE"
     let EXERCISE_TIME = "EXERCISE_TIME"
     let WORKOUT = "WORKOUT"
+    
+    let DIETARY_FAT_SATURATED = "DIETARY_FAT_SATURATED"
+    let DIETARY_FAT_POLYUNSATURATED = "DIETARY_FAT_POLYUNSATURATED"
+    let DIETARY_FAT_MONOUNSATURATED = "DIETARY_FAT_MONOUNSATURATED"
+    let DIETARY_CHOLESTEROL = "DIETARY_CHOLESTEROL"
+    let DIETARY_SODIUM = "DIETARY_SODIUM"
+    let DIETARY_POTASSIUM = "DIETARY_POTASSIUM"
+    let DIETARY_FIBER = "DIETARY_FIBER"
+    let DIETARY_SUGAR = "DIETARY_SUGAR"
+    let DIETARY_VITAMIN_A = "DIETARY_VITAMIN_A"
+    let DIETARY_THIAMIN = "DIETARY_THIAMIN"
+    let DIETARY_RIBOFLAVIN = "DIETARY_RIBOFLAVIN"
+    let DIETARY_NIACIN = "DIETARY_NIACIN"
+    let DIETARY_PANTOTHENIC_ACID = "DIETARY_PANTOTHENIC_ACID"
+    let DIETARY_VITAMIN_B6 = "DIETARY_VITAMIN_B6"
+    let DIETARY_VITAMIN_B12 = "DIETARY_VITAMIN_B12"
+    let DIETARY_VITAMIN_C = "DIETARY_VITAMIN_C"
+    let DIETARY_VITAMIN_D = "DIETARY_VITAMIN_D"
+    let DIETARY_VITAMIN_E = "DIETARY_VITAMIN_E"
+    let DIETARY_VITAMIN_K = "DIETARY_VITAMIN_K"
+    let DIETARY_FOLATE = "DIETARY_FOLATE"
+    let DIETARY_CALCIUM = "DIETARY_CALCIUM"
+    let DIETARY_IRON = "DIETARY_IRON"
+    let DIETARY_MAGNESIUM = "DIETARY_MAGNESIUM"
+    let DIETARY_PHOSPHORUS = "DIETARY_PHOSPHORUS"
+    let DIETARY_ZINC = "DIETARY_ZINC"
+    let DIETARY_WATER = "DIETARY_WATER"
+    let DIETARY_CAFFEINE = "DIETARY_CAFFEINE"
+    let DIETARY_COPPER = "DIETARY_COPPER"
+    let DIETARY_MANGANESE = "DIETARY_MANGANESE"
+    let DIETARY_SELENIUM = "DIETARY_SELENIUM"
 
     struct PluginError: Error {
         let message: String
@@ -74,6 +105,21 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         /// Handle getData
         else if (call.method.elementsEqual("getData")){
             getData(call: call, result: result)
+        }
+        
+        /// Handle deleteData
+        else if (call.method.elementsEqual("deleteData")){
+            try! deleteData(call: call, result: result)
+        }
+        
+        /// Handle deleteFoodData
+        else if (call.method.elementsEqual("deleteFoodData")){
+            try! deleteFoodData(call: call, result: result)
+        }
+        
+        /// Handle writeFoodData
+        else if (call.method.elementsEqual("writeFoodData")){
+            try! writeFoodData(call: call, result: result)
         }
 
         /// Handle getTotalStepsInInterval
@@ -174,16 +220,202 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    func writeData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+    func writeFoodData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
         guard let arguments = call.arguments as? NSDictionary,
-            let value = (arguments["value"] as? Double),
-            let type = (arguments["dataTypeKey"] as? String),
+            let foodList = arguments["foodList"] as? Array<Dictionary<String, Any>>,
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber),
+            let overwrite = (arguments["overwrite"] as? Bool)
+            else {
+                throw PluginError(message: "Invalid Arguments")
+            }
+        
+        NSLog("Successfully called writeFoodData")
+        
+        let nutrientsToWrite: Array<String> = [DIETARY_ENERGY_CONSUMED,
+                                               DIETARY_PROTEIN_CONSUMED,
+                                               DIETARY_FATS_CONSUMED,
+                                               DIETARY_CARBS_CONSUMED,
+                                               DIETARY_FAT_SATURATED,
+                                               DIETARY_FAT_POLYUNSATURATED,
+                                               DIETARY_FAT_MONOUNSATURATED,
+                                               DIETARY_CHOLESTEROL,
+                                               DIETARY_SODIUM,
+                                               DIETARY_POTASSIUM,
+                                               DIETARY_FIBER,
+                                               DIETARY_SUGAR,
+                                               DIETARY_VITAMIN_A,
+                                               DIETARY_THIAMIN,
+                                               DIETARY_RIBOFLAVIN,
+                                               DIETARY_NIACIN,
+                                               DIETARY_PANTOTHENIC_ACID,
+                                               DIETARY_VITAMIN_B6,
+                                               DIETARY_VITAMIN_B12,
+                                               DIETARY_VITAMIN_C,
+                                               DIETARY_VITAMIN_D,
+                                               DIETARY_VITAMIN_E,
+                                               DIETARY_VITAMIN_K,
+                                               DIETARY_FOLATE,
+                                               DIETARY_CALCIUM,
+                                               DIETARY_IRON,
+                                               DIETARY_MAGNESIUM,
+                                               DIETARY_PHOSPHORUS,
+                                               DIETARY_ZINC,
+                                               DIETARY_WATER,
+                                               DIETARY_CAFFEINE,
+                                               DIETARY_COPPER,
+                                               DIETARY_MANGANESE,
+                                               DIETARY_SELENIUM]
+        
+        var nutrientAccess: [String: Bool?] = [:]
+        
+        for nutrient in nutrientsToWrite {
+            let type = dataTypeLookUp(key: nutrient)
+            let permission = hasPermission(type: type, access: 1)
+            nutrientAccess[nutrient] = permission
+        }
+            
+        let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+        let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+        
+        var consumedFoods: Array<HKCorrelation> = []
+        
+        for food in foodList {
+            var iterationFood = food
+            
+            var consumedSamples: Set<HKSample> = []
+            
+            let timestamp = iterationFood.removeValue(forKey: "timestamp") as! NSNumber
+            let date = Date(timeIntervalSince1970: timestamp.doubleValue / 1000)
+            
+            for (key, value) in iterationFood {
+                let dataType = dataTypeLookUp(key: key) as! HKQuantityType
+                let dataTypeUnit = unitLookUp(key: key)
+                if let access = nutrientAccess[key] {
+                    if (access == true) {
+                        let sample = HKQuantitySample(
+                            type: dataType,
+                            quantity: HKQuantity(unit: dataTypeUnit, doubleValue: value as! Double),
+                            start: date,
+                            end: date)
+                        
+                        consumedSamples.insert(sample)
+                    }
+                } else {
+                  NSLog("Unknown nutrient or nutrient access")
+                }
+            }
+            
+            if (!consumedSamples.isEmpty) {
+                let foodType: HKCorrelationType = HKCorrelationType.correlationType(forIdentifier: HKCorrelationTypeIdentifier.food)!
+
+                let foodCorrelation: HKCorrelation = HKCorrelation(type: foodType, start: date, end: date, objects: consumedSamples)
+                
+                consumedFoods.append(foodCorrelation)
+            }
+        }
+                
+        let query = HKCorrelationQuery(type: HKCorrelationType.correlationType(forIdentifier: HKCorrelationTypeIdentifier.food)!, predicate: HKCorrelationQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), samplePredicates: nil)
+        {
+            query, results, error in
+            
+            if let correlations = results {
+                var samplesToDelete: Array<HKSample> = []
+                for correlation in correlations {
+                    for sample in correlation.objects {
+                        samplesToDelete.append(sample)
+                    }
+                }
+                
+                if (overwrite == true) {
+                    if (!samplesToDelete.isEmpty) {
+                        self.healthStore.delete(samplesToDelete, withCompletion: { (success, error) in
+                            if let err = error {
+                                NSLog("Error Deleting, Sample: \(err.localizedDescription)")
+                            }
+                        })
+                    }
+                }
+                
+                if (!consumedFoods.isEmpty) {
+                    self.healthStore.save(consumedFoods, withCompletion: { (success, error) in
+                        if let err = error {
+                            NSLog("Error Saving, Sample: \(err.localizedDescription)")
+                        }
+                        DispatchQueue.main.async {
+                            result(success)
+                        }
+                    })
+                } else {
+                    DispatchQueue.main.async {
+                        result(true)
+                    }
+                }
+            }
+            else {
+                if let err = error {
+                    NSLog("Error Querying For Samples to Delete, Sample: \(err.localizedDescription)")
+                }
+            }
+        }
+        self.healthStore.execute(query)
+    }
+    
+    func deleteFoodData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+        guard let arguments = call.arguments as? NSDictionary,
             let startDate = (arguments["startTime"] as? NSNumber),
             let endDate = (arguments["endTime"] as? NSNumber)
             else {
                 throw PluginError(message: "Invalid Arguments")
             }
         
+        NSLog("Successfully called deleteFoodData")
+            
+        let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+        let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+                
+        let query = HKCorrelationQuery(type: HKCorrelationType.correlationType(forIdentifier: HKCorrelationTypeIdentifier.food)!, predicate: HKCorrelationQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), samplePredicates: nil)
+        {
+            query, results, error in
+            
+            if let correlations = results {
+                var samplesToDelete: Array<HKSample> = []
+                for correlation in correlations {
+                    for sample in correlation.objects {
+                        samplesToDelete.append(sample)
+                    }
+                }
+                
+                if (!samplesToDelete.isEmpty) {
+                    self.healthStore.delete(samplesToDelete, withCompletion: { (success, error) in
+                        if let err = error {
+                            NSLog("Error Deleting, Sample: \(err.localizedDescription)")
+                        }
+                        DispatchQueue.main.async {
+                            result(success)
+                        }
+                    })
+                }
+            }
+            else {
+                if let err = error {
+                    NSLog("Error Querying For Samples to Delete, Sample: \(err.localizedDescription)")
+                }
+            }
+        }
+        self.healthStore.execute(query)
+    }
+    
+    func writeData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+        guard let arguments = call.arguments as? NSDictionary,
+            let value = (arguments["value"] as? Double),
+            let type = (arguments["dataTypeKey"] as? String),
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber),
+            let overwrite = (arguments["overwrite"] as? Bool)
+            else {
+                throw PluginError(message: "Invalid Arguments")
+            }
         let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
         let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
         
@@ -198,14 +430,48 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
           
           sample = HKQuantitySample(type: dataTypeLookUp(key: type) as! HKQuantityType, quantity: quantity, start: dateFrom, end: dateTo)
         }
+                
+        if (overwrite == true) {
+            self.healthStore.deleteObjects(of: dataTypeLookUp(key: type), predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
+                if let err = error {
+                    print("Error Deleting \(type) Sample: \(err.localizedDescription)")
+                }
+                DispatchQueue.main.async {
+                    result(success)
+                }
+            })
+        }
         
-        HKHealthStore().save(sample, withCompletion: { (success, error) in
+        self.healthStore.save(sample, withCompletion: { (success, error) in
             if let err = error {
                 print("Error Saving \(type) Sample: \(err.localizedDescription)")
             }
             DispatchQueue.main.async {
                 result(success)
             }
+        })
+    }
+    
+    func deleteData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+        guard let arguments = call.arguments as? NSDictionary,
+            let type = (arguments["dataTypeKey"] as? String),
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber)
+            else {
+                throw PluginError(message: "Invalid Arguments")
+            }
+        let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+        let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+        
+        print("Successfully called deleteData with type of \(type)")
+        
+        self.healthStore.deleteObjects(of: dataTypeLookUp(key: type), predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
+                if let err = error {
+                    print("Error Deleting \(type) Sample: \(err.localizedDescription)")
+                }
+                DispatchQueue.main.async {
+                    result(success)
+                }
         })
     }
 
@@ -223,15 +489,15 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let dataType = dataTypeLookUp(key: dataTypeKey)
         let predicate = HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
+        let unit = unitLookUp(key: dataTypeKey)
 
         let query =  HKSampleQuery(sampleType: dataType, predicate: predicate, limit: limit, sortDescriptors: [sortDescriptor]) {
             x, samplesOrNil, error in
 
             switch samplesOrNil {
             case let (samples as [HKQuantitySample]) as Any:
-                
                 let dictionaries = samples.map { sample -> NSDictionary in
-                    let unit = self.unitLookUp(key: dataTypeKey)
                     return [
                         "uuid": "\(sample.uuid)",
                         "value": sample.quantity.doubleValue(for: unit),
@@ -293,7 +559,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
         }
 
-        HKHealthStore().execute(query)
+        self.healthStore.execute(query)
     }
 
      func getTotalStepsInInterval(call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -335,7 +601,7 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
         }
 
-        HKHealthStore().execute(query)
+         self.healthStore.execute(query)
     }
 
     func unitLookUp(key: String) -> HKUnit {
@@ -385,6 +651,37 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         unitDict[SLEEP_AWAKE] = HKUnit.init(from: "")
         unitDict[EXERCISE_TIME] =  HKUnit.minute()
         unitDict[WORKOUT] = HKUnit.init(from: "")
+        unitDict[DIETARY_FAT_SATURATED] = HKUnit.gram()
+        unitDict[DIETARY_FAT_POLYUNSATURATED] = HKUnit.gram()
+        unitDict[DIETARY_FAT_MONOUNSATURATED] = HKUnit.gram()
+        unitDict[DIETARY_CHOLESTEROL] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_SODIUM] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_POTASSIUM] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_FIBER] = HKUnit.gram()
+        unitDict[DIETARY_SUGAR] = HKUnit.gram()
+        unitDict[DIETARY_VITAMIN_A] = HKUnit.gramUnit(with: .micro)
+        unitDict[DIETARY_THIAMIN] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_RIBOFLAVIN] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_NIACIN] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_PANTOTHENIC_ACID] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_VITAMIN_B6] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_VITAMIN_B12] = HKUnit.gramUnit(with: .micro)
+        unitDict[DIETARY_VITAMIN_C] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_VITAMIN_D] = HKUnit.gramUnit(with: .micro)
+        unitDict[DIETARY_VITAMIN_E] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_VITAMIN_K] = HKUnit.gramUnit(with: .micro)
+        unitDict[DIETARY_FOLATE] = HKUnit.gramUnit(with: .micro)
+        unitDict[DIETARY_CALCIUM] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_IRON] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_MAGNESIUM] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_PHOSPHORUS] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_ZINC] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_WATER] = HKUnit.liter()
+        unitDict[DIETARY_CAFFEINE] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_COPPER] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_MANGANESE] = HKUnit.gramUnit(with: .milli)
+        unitDict[DIETARY_SELENIUM] = HKUnit.gramUnit(with: .micro)
+        
 
         // Set up iOS 11 specific types (ordinary health data types)
         if #available(iOS 11.0, *) {
@@ -420,6 +717,37 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             dataTypesDict[SLEEP_AWAKE] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
             dataTypesDict[EXERCISE_TIME] = HKSampleType.quantityType(forIdentifier: .appleExerciseTime)!
             dataTypesDict[WORKOUT] = HKSampleType.workoutType()
+            dataTypesDict[DIETARY_FAT_SATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatSaturated)!
+            dataTypesDict[DIETARY_FAT_POLYUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)!
+            dataTypesDict[DIETARY_FAT_MONOUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatMonounsaturated)!
+            dataTypesDict[DIETARY_CHOLESTEROL] = HKSampleType.quantityType(forIdentifier: .dietaryCholesterol)!
+            dataTypesDict[DIETARY_SODIUM] = HKSampleType.quantityType(forIdentifier: .dietarySodium)!
+            dataTypesDict[DIETARY_POTASSIUM] = HKSampleType.quantityType(forIdentifier: .dietaryPotassium)!
+            dataTypesDict[DIETARY_FIBER] = HKSampleType.quantityType(forIdentifier: .dietaryFiber)!
+            dataTypesDict[DIETARY_SUGAR] = HKSampleType.quantityType(forIdentifier: .dietarySugar)!
+            dataTypesDict[DIETARY_VITAMIN_A] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminA)!
+            dataTypesDict[DIETARY_THIAMIN] = HKSampleType.quantityType(forIdentifier: .dietaryThiamin)!
+            dataTypesDict[DIETARY_RIBOFLAVIN] = HKSampleType.quantityType(forIdentifier: .dietaryRiboflavin)!
+            dataTypesDict[DIETARY_NIACIN] = HKSampleType.quantityType(forIdentifier: .dietaryNiacin)!
+            dataTypesDict[DIETARY_PANTOTHENIC_ACID] = HKSampleType.quantityType(forIdentifier: .dietaryPantothenicAcid)!
+            dataTypesDict[DIETARY_VITAMIN_B6] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB6)!
+            dataTypesDict[DIETARY_VITAMIN_B12] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB12)!
+            dataTypesDict[DIETARY_VITAMIN_C] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminC)!
+            dataTypesDict[DIETARY_VITAMIN_D] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminD)!
+            dataTypesDict[DIETARY_VITAMIN_E] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminE)!
+            dataTypesDict[DIETARY_VITAMIN_K] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminK)!
+            dataTypesDict[DIETARY_FOLATE] = HKSampleType.quantityType(forIdentifier: .dietaryFolate)!
+            dataTypesDict[DIETARY_CALCIUM] = HKSampleType.quantityType(forIdentifier: .dietaryCalcium)!
+            dataTypesDict[DIETARY_IRON] = HKSampleType.quantityType(forIdentifier: .dietaryIron)!
+            dataTypesDict[DIETARY_MAGNESIUM] = HKSampleType.quantityType(forIdentifier: .dietaryMagnesium)!
+            dataTypesDict[DIETARY_PHOSPHORUS] = HKSampleType.quantityType(forIdentifier: .dietaryPhosphorus)!
+            dataTypesDict[DIETARY_ZINC] = HKSampleType.quantityType(forIdentifier: .dietaryZinc)!
+            dataTypesDict[DIETARY_WATER] = HKSampleType.quantityType(forIdentifier: .dietaryWater)!
+            dataTypesDict[DIETARY_CAFFEINE] = HKSampleType.quantityType(forIdentifier: .dietaryCaffeine)!
+            dataTypesDict[DIETARY_COPPER] = HKSampleType.quantityType(forIdentifier: .dietaryCopper)!
+            dataTypesDict[DIETARY_MANGANESE] = HKSampleType.quantityType(forIdentifier: .dietaryManganese)!
+            dataTypesDict[DIETARY_SELENIUM] = HKSampleType.quantityType(forIdentifier: .dietarySelenium)!
+            
 
             healthDataTypes = Array(dataTypesDict.values)
         }

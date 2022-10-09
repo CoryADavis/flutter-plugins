@@ -27,6 +27,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     compileSdkVersion 31
+
     packagingOptions {
         exclude 'META-INF/com.android.tools/proguard/coroutines.pro'
     }
