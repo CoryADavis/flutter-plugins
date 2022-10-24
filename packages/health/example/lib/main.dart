@@ -212,7 +212,7 @@ class _HealthAppState extends State<HealthApp> {
 
   Future addBodyFatDataToHealthConnect() async {
     final now = DateTime.now();
-    bool success = await health.writeHCData(HealthDataType.BODYFAT,
+    bool success = await health.writeHCData(HealthDataType.BODY_FAT_PERCENTAGE,
         value: 22.toDouble(), currentTime: now);
 
     Fluttertoast.showToast(
@@ -232,7 +232,7 @@ class _HealthAppState extends State<HealthApp> {
   List<HealthConnectBodyFat> healthBodyFat = [];
 
   Future readBodyFatDataFromHealthConnect() async {
-    var type = HealthDataType.BODYFAT;
+    var type = HealthDataType.BODY_FAT_PERCENTAGE;
     final startTime = DateTime.now().subtract(Duration(minutes: 100));
     final endTime = DateTime.now();
     List<HealthConnectData> success =
@@ -243,7 +243,7 @@ class _HealthAppState extends State<HealthApp> {
   }
 
   Future deleteBodyDataFromHealthConnect(String uID) async {
-    var type = HealthDataType.BODYFAT;
+    var type = HealthDataType.BODY_FAT_PERCENTAGE;
 
     bool success = await health.deleteHCData(type, uID);
     if (success) {
@@ -410,10 +410,10 @@ class _HealthAppState extends State<HealthApp> {
     // define the types to get
     final types = [
       HealthDataType.WEIGHT,
-      HealthDataType.BODYFAT,
+      HealthDataType.BODY_FAT_PERCENTAGE,
       HealthDataType.NUTRITION,
       HealthDataType.WEIGHT,
-      HealthDataType.BODYFAT,
+      HealthDataType.BODY_FAT_PERCENTAGE,
       HealthDataType.NUTRITION,
     ];
 
@@ -436,10 +436,10 @@ class _HealthAppState extends State<HealthApp> {
     // define the types to get
     final types = [
       HealthDataType.WEIGHT,
-      HealthDataType.BODYFAT,
+      HealthDataType.BODY_FAT_PERCENTAGE,
       HealthDataType.NUTRITION,
       HealthDataType.WEIGHT,
-      HealthDataType.BODYFAT,
+      HealthDataType.BODY_FAT_PERCENTAGE,
       HealthDataType.NUTRITION,
     ];
 

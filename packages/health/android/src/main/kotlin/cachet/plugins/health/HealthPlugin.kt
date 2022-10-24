@@ -92,7 +92,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
     private var SLEEP_AWAKE = "SLEEP_AWAKE"
     private var SLEEP_IN_BED = "SLEEP_IN_BED"
     private var NUTRITION = "NUTRITION"
-    private var BODYFAT = "BODYFAT"
+    //private var BODYFAT = "BODYFAT"
 
 
     private var DIETARY_ENERGY_CONSUMED = "DIETARY_ENERGY_CONSUMED"
@@ -629,7 +629,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 )
                 records = listOf(weight)
             }
-            BODYFAT -> {
+            BODY_FAT_PERCENTAGE -> {
                 val currentTime = call.argument<String>("currentTime")!!
                 val value = call.argument<Float>("value")!!
                 val time = ZonedDateTime.parse(
@@ -879,7 +879,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                     activity!!.runOnUiThread { result.success(healthData) }
                 }
             }
-            BODYFAT -> {
+            BODY_FAT_PERCENTAGE -> {
                 val startDate = ZonedDateTime.parse(
                         startDate,
                         DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
@@ -1110,7 +1110,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 )
                 result.success(true)
             }
-        } else if (type == BODYFAT) {
+        } else if (type == BODY_FAT_PERCENTAGE) {
             CoroutineScope(Dispatchers.Main).launch {
                 healthConnectClient.deleteRecords(
                         BodyFatRecord::class,
@@ -1365,7 +1365,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 NUTRITION -> {
                     NutritionRecord::class
                 }
-                BODYFAT -> {
+                BODY_FAT_PERCENTAGE -> {
                     BodyFatRecord::class
                 }
                 else -> throw IllegalArgumentException("Unknown access type $access")
