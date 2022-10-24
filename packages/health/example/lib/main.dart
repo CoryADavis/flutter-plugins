@@ -726,7 +726,7 @@ class _HealthAppState extends State<HealthApp> {
                             title: Text(
                                 "Name: ${data.name} MealType: ${getMealTypeAsString(data.mealType ?? MealType.UNKNOWN)}"),
                             subtitle: Text(
-                                'Energy: ${data.energy?.getInKilocalories} DateTime ${data.startTime.toIso8601String()} - ${data.endTime.toIso8601String()}\nuID ${data.uID}\nbiotin : ${data.biotin?.getInGram} gram'),
+                                'Energy: ${data.energy?.getInKilocalories} DateTime ${data.startTime} - ${data.endTime}\nuID ${data.uID}\nbiotin : ${data.biotin?.getInGram} gram'),
                           );
                         }),
                   ],
