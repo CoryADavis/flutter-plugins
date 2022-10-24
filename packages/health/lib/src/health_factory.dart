@@ -612,4 +612,24 @@ class HealthFactory {
     }
     throw ArgumentError("This method will only work with Android.");
   }
+
+  /// Delete Health Connect entries using [startTime] & [endTime] &[type]
+  Future<bool> deleteHCDataByDateRange(
+      HealthDataType type, DateTime startTime, DateTime endTime) async {
+    if (_platformType == PlatformType.ANDROID) {
+      if (startTime.isAfter(endTime))
+        throw ArgumentError("startTime must be equal or earlier than endTime");
+      Map<String, dynamic> args = {
+        'dataTypeKey': _enumToString(type),
+        'startTime':
+            DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(startTime).toString(),
+        'endTime':
+            DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endTime).toString(),
+      };
+      var success =
+          await _channel.invokeMethod('deleteHealthConnectDataByDateRange', args);
+      return success ?? false;
+    }
+    throw ArgumentError("This method will only work with Android.");
+  }
 }

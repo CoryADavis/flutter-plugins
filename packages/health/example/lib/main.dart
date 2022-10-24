@@ -210,6 +210,22 @@ class _HealthAppState extends State<HealthApp> {
     }
   }
 
+  Future deleteHealthDataByDateRange(
+      HealthDataType type, DateTime startTime, DateTime endTime) async {
+    bool success =
+        await health.deleteHCDataByDateRange(type, startTime, endTime);
+    if (success) {
+      if (type == HealthDataType.WEIGHT) {
+        healthWeight.clear();
+      } else if (type == HealthDataType.BODY_FAT_PERCENTAGE) {
+        healthBodyFat.clear();
+      } else if (type == HealthDataType.NUTRITION) {
+        healthNutrition.clear();
+      }
+      setState(() {});
+    }
+  }
+
   Future addBodyFatDataToHealthConnect() async {
     final now = DateTime.now();
     bool success = await health.writeHCData(HealthDataType.BODY_FAT_PERCENTAGE,
@@ -729,6 +745,63 @@ class _HealthAppState extends State<HealthApp> {
                                 'Energy: ${data.energy?.getInKilocalories} DateTime ${data.startTime} - ${data.endTime}\nuID ${data.uID}\nbiotin : ${data.biotin?.getInGram} gram'),
                           );
                         }),
+                    ElevatedButton(
+                        onPressed: () {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
+                            deleteHealthDataByDateRange(
+                                HealthDataType.WEIGHT,
+                                DateTime.now().subtract(Duration(hours: 5)),
+                                DateTime.now());
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text(
+                          "Delete Weight Data from\nHealth Connect using date range",
+                          textAlign: TextAlign.center,
+                        )),
+                    ElevatedButton(
+                        onPressed: () {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
+                            deleteHealthDataByDateRange(
+                                HealthDataType.BODY_FAT_PERCENTAGE,
+                                DateTime.now().subtract(Duration(hours: 5)),
+                                DateTime.now());
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text(
+                          "Delete BodyFat Data from\nHealth Connect using date range",
+                          textAlign: TextAlign.center,
+                        )),
+                    ElevatedButton(
+                        onPressed: () {
+                          if (androidDataSource ==
+                              AndroidDataSource.HealthConnect) {
+                            deleteHealthDataByDateRange(
+                                HealthDataType.NUTRITION,
+                                DateTime.now().subtract(Duration(hours: 5)),
+                                DateTime.now());
+                            return;
+                          }
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please mark bottom checkbox for Health Connect data");
+                        },
+                        child: Text(
+                          "Delete Nutrition Data from\nHealth Connect using date range",
+                          textAlign: TextAlign.center,
+                        )),
+                    const SizedBox(
+                      height: 100,
+                    )
                   ],
                 ),
               ),

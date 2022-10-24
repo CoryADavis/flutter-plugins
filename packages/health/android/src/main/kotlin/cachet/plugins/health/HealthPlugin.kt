@@ -1132,6 +1132,103 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
 
     }
 
+    private fun deleteHealthConnectDataByDateRange(call: MethodCall, result: Result) {
+        if (activity == null) {
+            result.success(false)
+            return
+        }
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        val type = call.argument<String>("dataTypeKey")!!
+        val startTime = call.argument<String>("startTime")!!
+        val endTime = call.argument<String>("endTime")!!
+        mResult = result
+
+        if (type == WEIGHT) {
+            val startDate = ZonedDateTime.parse(
+                    startTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val endDate = ZonedDateTime.parse(
+                    endTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val request = ReadRecordsRequest(
+                    recordType = WeightRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                            startDate.toInstant(),
+                            endDate.toInstant()
+                    )
+            )
+            CoroutineScope(Dispatchers.Main).launch {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<WeightRecord> = response.records;
+
+                val uIdList = dataList.map { it.metadata.uid }.toList();
+                healthConnectClient.deleteRecords(
+                        WeightRecord::class,
+                        uidsList = uIdList,
+                        clientRecordIdsList = emptyList()
+                )
+                result.success(true)
+            }
+        } else if (type == BODY_FAT_PERCENTAGE) {
+            val startDate = ZonedDateTime.parse(
+                    startTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val endDate = ZonedDateTime.parse(
+                    endTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val request = ReadRecordsRequest(
+                    recordType = BodyFatRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                            startDate.toInstant(),
+                            endDate.toInstant()
+                    )
+            )
+            CoroutineScope(Dispatchers.Main).launch {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<BodyFatRecord> = response.records;
+                val uIdList = dataList.map { it.metadata.uid }.toList();
+                healthConnectClient.deleteRecords(
+                        BodyFatRecord::class,
+                        uidsList = uIdList,
+                        clientRecordIdsList = emptyList()
+                )
+                result.success(true)
+            }
+        } else if (type == NUTRITION) {
+            val startDate = ZonedDateTime.parse(
+                    startTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val endDate = ZonedDateTime.parse(
+                    endTime,
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault())
+            )
+            val request = ReadRecordsRequest(
+                    recordType = NutritionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                            startDate.toInstant(),
+                            endDate.toInstant()
+                    ),
+            )
+            CoroutineScope(Dispatchers.Main).launch {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<NutritionRecord> = response.records;
+
+                val uIdList = dataList.map { it.metadata.uid }.toList();
+                healthConnectClient.deleteRecords(
+                        NutritionRecord::class,
+                        uidsList = uIdList,
+                        clientRecordIdsList = emptyList()
+                )
+                result.success(true)
+            }
+        }
+    }
+
     private fun dateTimeWithOffsetOrDefault(time: Instant, offset: ZoneOffset?): ZonedDateTime =
             if (offset != null) {
                 ZonedDateTime.ofInstant(time, offset)
@@ -1578,6 +1675,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
             "deleteHealthConnectData" -> deleteHealthConnectData(call, result)
             "requestHealthConnectPermission" -> requestHealthConnectPermission(call, result)
             "isHealthConnectAvailable" -> isHealthConnectAvailable(call, result)
+            "deleteHealthConnectDataByDateRange" -> deleteHealthConnectDataByDateRange(call, result)
             else -> result.notImplemented()
         }
     }
