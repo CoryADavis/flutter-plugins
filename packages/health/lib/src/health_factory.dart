@@ -651,8 +651,10 @@ class HealthFactory {
         'endTime':
             DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(endTime).toString(),
       };
+
       var success = await _channel.invokeMethod(
           'deleteHealthConnectDataByDateRange', args);
+
       return success ?? false;
     }
     throw ArgumentError("This method will only work with Android.");
