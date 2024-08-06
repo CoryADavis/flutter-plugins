@@ -151,7 +151,10 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
         
         for (index, type) in types.enumerated() {
-            let sampleType = dataTypeLookUp(key: type)
+            guard let sampleType = dataTypeLookUp(key: type) else {
+                result(false)
+                return
+            }
             let success = hasPermission(type: sampleType, access: permissions[index])
             if (success == nil || success == false) {
                 result(success)
@@ -189,7 +192,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         var typesToRead = Set<HKSampleType>()
         var typesToWrite = Set<HKSampleType>()
         for (index, key) in types.enumerated() {
-            let dataType = dataTypeLookUp(key: key)
+            guard let dataType = dataTypeLookUp(key: key) else {
+                continue
+            }
             let access = permissions[index]
             switch access {
             case 0:
@@ -260,7 +265,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         var nutrientAccess: [String: Bool?] = [:]
         
         for nutrient in nutrientsToWrite {
-            let type = dataTypeLookUp(key: nutrient)
+            guard let type = dataTypeLookUp(key: nutrient) else {
+                continue
+            }
             let permission = hasPermission(type: type, access: 1)
             nutrientAccess[nutrient] = permission
         }
@@ -279,7 +286,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             let date = Date(timeIntervalSince1970: timestamp.doubleValue / 1000)
             
             for (key, value) in iterationFood {
-                let dataType = dataTypeLookUp(key: key) as! HKQuantityType
+                guard let dataType = dataTypeLookUp(key: key) as? HKQuantityType else {
+                    continue
+                }
                 let dataTypeUnit = unitLookUp(key: key)
                 if let access = nutrientAccess[key] {
                     if (access == true) {
@@ -411,18 +420,30 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         
         print("Successfully called writeData with value of \(value) and type of \(type)")
         
+        guard let sampleType = dataTypeLookUp(key: type) else {
+                result(false)
+                return
+        }
+        
         let sample: HKObject
       
         if (unitLookUp(key: type) == HKUnit.init(from: "")) {
-          sample = HKCategorySample(type: dataTypeLookUp(key: type) as! HKCategoryType, value: Int(value), start: dateFrom, end: dateTo)
+            guard let categoryType = sampleType as? HKCategoryType else {
+                result(false)
+                return
+            }
+            sample = HKCategorySample(type: categoryType, value: Int(value), start: dateFrom, end: dateTo)
         } else {
-          let quantity = HKQuantity(unit: unitLookUp(key: type), doubleValue: value)
-          
-          sample = HKQuantitySample(type: dataTypeLookUp(key: type) as! HKQuantityType, quantity: quantity, start: dateFrom, end: dateTo)
+            guard let quantityType = sampleType as? HKQuantityType else {
+                result(false)
+                return
+            }
+            let quantity = HKQuantity(unit: unitLookUp(key: type), doubleValue: value)
+            sample = HKQuantitySample(type: quantityType, quantity: quantity, start: dateFrom, end: dateTo)
         }
                 
         if (overwrite == true) {
-            self.healthStore.deleteObjects(of: dataTypeLookUp(key: type), predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
+            self.healthStore.deleteObjects(of: sampleType, predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
                 if let err = error {
                     print("Error Deleting \(type) Sample: \(err.localizedDescription)")
                 }
@@ -455,7 +476,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         
         print("Successfully called deleteData with type of \(type)")
         
-        self.healthStore.deleteObjects(of: dataTypeLookUp(key: type), predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
+        guard let sampleType = dataTypeLookUp(key: type) else {
+                result(false)
+                return
+        }
+        
+        self.healthStore.deleteObjects(of: sampleType, predicate: HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []), withCompletion: { (success, _, error) in
                 if let err = error {
                     print("Error Deleting \(type) Sample: \(err.localizedDescription)")
                 }
@@ -476,7 +502,11 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
         let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
 
-        let dataType = dataTypeLookUp(key: dataTypeKey)
+        guard let dataType = dataTypeLookUp(key: dataTypeKey) else {
+            result(nil)
+            return
+        }
+        
         let predicate = HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
@@ -601,11 +631,8 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         return unit
     }
 
-    func dataTypeLookUp(key: String) -> HKSampleType {
-        guard let dataType_ = dataTypesDict[key] else {
-            return HKSampleType.quantityType(forIdentifier: .bodyMass)!
-        }
-        return dataType_
+    func dataTypeLookUp(key: String) -> HKSampleType? {
+        return dataTypesDict[key]
     }
 
     func initializeTypes() {
