@@ -164,20 +164,14 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
 
     
     func hasPermission(type: HKSampleType, access: Int) -> Bool? {
-        
-        if #available(iOS 11.0, *) {
-            let status = healthStore.authorizationStatus(for: type)
-            switch access {
-            case 0: // READ
-                return nil
-            case 1: // WRITE
-                return  (status == HKAuthorizationStatus.sharingAuthorized)
-            default: // READ_WRITE
-                return nil
-            }
-        }
-        else {
-           return nil
+        let status = healthStore.authorizationStatus(for: type)
+        switch access {
+        case 0: // READ
+            return nil
+        case 1: // WRITE
+            return  (status == HKAuthorizationStatus.sharingAuthorized)
+        default: // READ_WRITE
+            return nil
         }
     }
 
@@ -208,16 +202,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             }
         }
 
-        if #available(iOS 11.0, *) {
-            healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) { (success, error) in
-                DispatchQueue.main.async {
-                    result(success)
-                }
+        healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) { (success, error) in
+            DispatchQueue.main.async {
+                result(success)
             }
         }
-        else {
-            result(false)// Handle the error here.
-        }
+
     }
     
     func writeFoodData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -684,85 +674,81 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         
 
         // Set up iOS 11 specific types (ordinary health data types)
-        if #available(iOS 11.0, *) {
-            dataTypesDict[ACTIVE_ENERGY_BURNED] = HKSampleType.quantityType(forIdentifier: .activeEnergyBurned)!
-            dataTypesDict[BASAL_ENERGY_BURNED] = HKSampleType.quantityType(forIdentifier: .basalEnergyBurned)!
-            dataTypesDict[BLOOD_GLUCOSE] = HKSampleType.quantityType(forIdentifier: .bloodGlucose)!
-            dataTypesDict[BLOOD_OXYGEN] = HKSampleType.quantityType(forIdentifier: .oxygenSaturation)!
-            dataTypesDict[BLOOD_PRESSURE_DIASTOLIC] = HKSampleType.quantityType(forIdentifier: .bloodPressureDiastolic)!
-            dataTypesDict[BLOOD_PRESSURE_SYSTOLIC] = HKSampleType.quantityType(forIdentifier: .bloodPressureSystolic)!
-            dataTypesDict[BODY_FAT_PERCENTAGE] = HKSampleType.quantityType(forIdentifier: .bodyFatPercentage)!
-            dataTypesDict[BODY_MASS_INDEX] = HKSampleType.quantityType(forIdentifier: .bodyMassIndex)!
-            dataTypesDict[BODY_TEMPERATURE] = HKSampleType.quantityType(forIdentifier: .bodyTemperature)!
-            dataTypesDict[DIETARY_CARBS_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryCarbohydrates)!
-            dataTypesDict[DIETARY_ENERGY_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryEnergyConsumed)!
-            dataTypesDict[DIETARY_FATS_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryFatTotal)!
-            dataTypesDict[DIETARY_PROTEIN_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryProtein)!
-            dataTypesDict[ELECTRODERMAL_ACTIVITY] = HKSampleType.quantityType(forIdentifier: .electrodermalActivity)!
-            dataTypesDict[FORCED_EXPIRATORY_VOLUME] = HKSampleType.quantityType(forIdentifier: .forcedExpiratoryVolume1)!
-            dataTypesDict[HEART_RATE] = HKSampleType.quantityType(forIdentifier: .heartRate)!
-            dataTypesDict[HEART_RATE_VARIABILITY_SDNN] = HKSampleType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
-            dataTypesDict[HEIGHT] = HKSampleType.quantityType(forIdentifier: .height)!
-            dataTypesDict[RESTING_HEART_RATE] = HKSampleType.quantityType(forIdentifier: .restingHeartRate)!
-            dataTypesDict[STEPS] = HKSampleType.quantityType(forIdentifier: .stepCount)!
-            dataTypesDict[WAIST_CIRCUMFERENCE] = HKSampleType.quantityType(forIdentifier: .waistCircumference)!
-            dataTypesDict[WALKING_HEART_RATE] = HKSampleType.quantityType(forIdentifier: .walkingHeartRateAverage)!
-            dataTypesDict[WEIGHT] = HKSampleType.quantityType(forIdentifier: .bodyMass)!
-            dataTypesDict[DISTANCE_WALKING_RUNNING] = HKSampleType.quantityType(forIdentifier: .distanceWalkingRunning)!
-            dataTypesDict[FLIGHTS_CLIMBED] = HKSampleType.quantityType(forIdentifier: .flightsClimbed)!
-            dataTypesDict[WATER] = HKSampleType.quantityType(forIdentifier: .dietaryWater)!
-            dataTypesDict[MINDFULNESS] = HKSampleType.categoryType(forIdentifier: .mindfulSession)!
-            dataTypesDict[SLEEP_IN_BED] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
-            dataTypesDict[SLEEP_ASLEEP] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
-            dataTypesDict[SLEEP_AWAKE] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
-            dataTypesDict[EXERCISE_TIME] = HKSampleType.quantityType(forIdentifier: .appleExerciseTime)!
-            dataTypesDict[WORKOUT] = HKSampleType.workoutType()
-            dataTypesDict[DIETARY_FAT_SATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatSaturated)!
-            dataTypesDict[DIETARY_FAT_POLYUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)!
-            dataTypesDict[DIETARY_FAT_MONOUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatMonounsaturated)!
-            dataTypesDict[DIETARY_CHOLESTEROL] = HKSampleType.quantityType(forIdentifier: .dietaryCholesterol)!
-            dataTypesDict[DIETARY_SODIUM] = HKSampleType.quantityType(forIdentifier: .dietarySodium)!
-            dataTypesDict[DIETARY_POTASSIUM] = HKSampleType.quantityType(forIdentifier: .dietaryPotassium)!
-            dataTypesDict[DIETARY_FIBER] = HKSampleType.quantityType(forIdentifier: .dietaryFiber)!
-            dataTypesDict[DIETARY_SUGAR] = HKSampleType.quantityType(forIdentifier: .dietarySugar)!
-            dataTypesDict[DIETARY_VITAMIN_A] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminA)!
-            dataTypesDict[DIETARY_THIAMIN] = HKSampleType.quantityType(forIdentifier: .dietaryThiamin)!
-            dataTypesDict[DIETARY_RIBOFLAVIN] = HKSampleType.quantityType(forIdentifier: .dietaryRiboflavin)!
-            dataTypesDict[DIETARY_NIACIN] = HKSampleType.quantityType(forIdentifier: .dietaryNiacin)!
-            dataTypesDict[DIETARY_PANTOTHENIC_ACID] = HKSampleType.quantityType(forIdentifier: .dietaryPantothenicAcid)!
-            dataTypesDict[DIETARY_VITAMIN_B6] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB6)!
-            dataTypesDict[DIETARY_VITAMIN_B12] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB12)!
-            dataTypesDict[DIETARY_VITAMIN_C] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminC)!
-            dataTypesDict[DIETARY_VITAMIN_D] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminD)!
-            dataTypesDict[DIETARY_VITAMIN_E] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminE)!
-            dataTypesDict[DIETARY_VITAMIN_K] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminK)!
-            dataTypesDict[DIETARY_FOLATE] = HKSampleType.quantityType(forIdentifier: .dietaryFolate)!
-            dataTypesDict[DIETARY_CALCIUM] = HKSampleType.quantityType(forIdentifier: .dietaryCalcium)!
-            dataTypesDict[DIETARY_IRON] = HKSampleType.quantityType(forIdentifier: .dietaryIron)!
-            dataTypesDict[DIETARY_MAGNESIUM] = HKSampleType.quantityType(forIdentifier: .dietaryMagnesium)!
-            dataTypesDict[DIETARY_PHOSPHORUS] = HKSampleType.quantityType(forIdentifier: .dietaryPhosphorus)!
-            dataTypesDict[DIETARY_ZINC] = HKSampleType.quantityType(forIdentifier: .dietaryZinc)!
-            dataTypesDict[DIETARY_WATER] = HKSampleType.quantityType(forIdentifier: .dietaryWater)!
-            dataTypesDict[DIETARY_CAFFEINE] = HKSampleType.quantityType(forIdentifier: .dietaryCaffeine)!
-            dataTypesDict[DIETARY_COPPER] = HKSampleType.quantityType(forIdentifier: .dietaryCopper)!
-            dataTypesDict[DIETARY_MANGANESE] = HKSampleType.quantityType(forIdentifier: .dietaryManganese)!
-            dataTypesDict[DIETARY_SELENIUM] = HKSampleType.quantityType(forIdentifier: .dietarySelenium)!
-            
+        dataTypesDict[ACTIVE_ENERGY_BURNED] = HKSampleType.quantityType(forIdentifier: .activeEnergyBurned)!
+        dataTypesDict[BASAL_ENERGY_BURNED] = HKSampleType.quantityType(forIdentifier: .basalEnergyBurned)!
+        dataTypesDict[BLOOD_GLUCOSE] = HKSampleType.quantityType(forIdentifier: .bloodGlucose)!
+        dataTypesDict[BLOOD_OXYGEN] = HKSampleType.quantityType(forIdentifier: .oxygenSaturation)!
+        dataTypesDict[BLOOD_PRESSURE_DIASTOLIC] = HKSampleType.quantityType(forIdentifier: .bloodPressureDiastolic)!
+        dataTypesDict[BLOOD_PRESSURE_SYSTOLIC] = HKSampleType.quantityType(forIdentifier: .bloodPressureSystolic)!
+        dataTypesDict[BODY_FAT_PERCENTAGE] = HKSampleType.quantityType(forIdentifier: .bodyFatPercentage)!
+        dataTypesDict[BODY_MASS_INDEX] = HKSampleType.quantityType(forIdentifier: .bodyMassIndex)!
+        dataTypesDict[BODY_TEMPERATURE] = HKSampleType.quantityType(forIdentifier: .bodyTemperature)!
+        dataTypesDict[DIETARY_CARBS_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryCarbohydrates)!
+        dataTypesDict[DIETARY_ENERGY_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryEnergyConsumed)!
+        dataTypesDict[DIETARY_FATS_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryFatTotal)!
+        dataTypesDict[DIETARY_PROTEIN_CONSUMED] = HKSampleType.quantityType(forIdentifier: .dietaryProtein)!
+        dataTypesDict[ELECTRODERMAL_ACTIVITY] = HKSampleType.quantityType(forIdentifier: .electrodermalActivity)!
+        dataTypesDict[FORCED_EXPIRATORY_VOLUME] = HKSampleType.quantityType(forIdentifier: .forcedExpiratoryVolume1)!
+        dataTypesDict[HEART_RATE] = HKSampleType.quantityType(forIdentifier: .heartRate)!
+        dataTypesDict[HEART_RATE_VARIABILITY_SDNN] = HKSampleType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        dataTypesDict[HEIGHT] = HKSampleType.quantityType(forIdentifier: .height)!
+        dataTypesDict[RESTING_HEART_RATE] = HKSampleType.quantityType(forIdentifier: .restingHeartRate)!
+        dataTypesDict[STEPS] = HKSampleType.quantityType(forIdentifier: .stepCount)!
+        dataTypesDict[WAIST_CIRCUMFERENCE] = HKSampleType.quantityType(forIdentifier: .waistCircumference)!
+        dataTypesDict[WALKING_HEART_RATE] = HKSampleType.quantityType(forIdentifier: .walkingHeartRateAverage)!
+        dataTypesDict[WEIGHT] = HKSampleType.quantityType(forIdentifier: .bodyMass)!
+        dataTypesDict[DISTANCE_WALKING_RUNNING] = HKSampleType.quantityType(forIdentifier: .distanceWalkingRunning)!
+        dataTypesDict[FLIGHTS_CLIMBED] = HKSampleType.quantityType(forIdentifier: .flightsClimbed)!
+        dataTypesDict[WATER] = HKSampleType.quantityType(forIdentifier: .dietaryWater)!
+        dataTypesDict[MINDFULNESS] = HKSampleType.categoryType(forIdentifier: .mindfulSession)!
+        dataTypesDict[SLEEP_IN_BED] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
+        dataTypesDict[SLEEP_ASLEEP] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
+        dataTypesDict[SLEEP_AWAKE] = HKSampleType.categoryType(forIdentifier: .sleepAnalysis)!
+        dataTypesDict[EXERCISE_TIME] = HKSampleType.quantityType(forIdentifier: .appleExerciseTime)!
+        dataTypesDict[WORKOUT] = HKSampleType.workoutType()
+        dataTypesDict[DIETARY_FAT_SATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatSaturated)!
+        dataTypesDict[DIETARY_FAT_POLYUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatPolyunsaturated)!
+        dataTypesDict[DIETARY_FAT_MONOUNSATURATED] = HKSampleType.quantityType(forIdentifier: .dietaryFatMonounsaturated)!
+        dataTypesDict[DIETARY_CHOLESTEROL] = HKSampleType.quantityType(forIdentifier: .dietaryCholesterol)!
+        dataTypesDict[DIETARY_SODIUM] = HKSampleType.quantityType(forIdentifier: .dietarySodium)!
+        dataTypesDict[DIETARY_POTASSIUM] = HKSampleType.quantityType(forIdentifier: .dietaryPotassium)!
+        dataTypesDict[DIETARY_FIBER] = HKSampleType.quantityType(forIdentifier: .dietaryFiber)!
+        dataTypesDict[DIETARY_SUGAR] = HKSampleType.quantityType(forIdentifier: .dietarySugar)!
+        dataTypesDict[DIETARY_VITAMIN_A] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminA)!
+        dataTypesDict[DIETARY_THIAMIN] = HKSampleType.quantityType(forIdentifier: .dietaryThiamin)!
+        dataTypesDict[DIETARY_RIBOFLAVIN] = HKSampleType.quantityType(forIdentifier: .dietaryRiboflavin)!
+        dataTypesDict[DIETARY_NIACIN] = HKSampleType.quantityType(forIdentifier: .dietaryNiacin)!
+        dataTypesDict[DIETARY_PANTOTHENIC_ACID] = HKSampleType.quantityType(forIdentifier: .dietaryPantothenicAcid)!
+        dataTypesDict[DIETARY_VITAMIN_B6] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB6)!
+        dataTypesDict[DIETARY_VITAMIN_B12] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminB12)!
+        dataTypesDict[DIETARY_VITAMIN_C] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminC)!
+        dataTypesDict[DIETARY_VITAMIN_D] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminD)!
+        dataTypesDict[DIETARY_VITAMIN_E] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminE)!
+        dataTypesDict[DIETARY_VITAMIN_K] = HKSampleType.quantityType(forIdentifier: .dietaryVitaminK)!
+        dataTypesDict[DIETARY_FOLATE] = HKSampleType.quantityType(forIdentifier: .dietaryFolate)!
+        dataTypesDict[DIETARY_CALCIUM] = HKSampleType.quantityType(forIdentifier: .dietaryCalcium)!
+        dataTypesDict[DIETARY_IRON] = HKSampleType.quantityType(forIdentifier: .dietaryIron)!
+        dataTypesDict[DIETARY_MAGNESIUM] = HKSampleType.quantityType(forIdentifier: .dietaryMagnesium)!
+        dataTypesDict[DIETARY_PHOSPHORUS] = HKSampleType.quantityType(forIdentifier: .dietaryPhosphorus)!
+        dataTypesDict[DIETARY_ZINC] = HKSampleType.quantityType(forIdentifier: .dietaryZinc)!
+        dataTypesDict[DIETARY_WATER] = HKSampleType.quantityType(forIdentifier: .dietaryWater)!
+        dataTypesDict[DIETARY_CAFFEINE] = HKSampleType.quantityType(forIdentifier: .dietaryCaffeine)!
+        dataTypesDict[DIETARY_COPPER] = HKSampleType.quantityType(forIdentifier: .dietaryCopper)!
+        dataTypesDict[DIETARY_MANGANESE] = HKSampleType.quantityType(forIdentifier: .dietaryManganese)!
+        dataTypesDict[DIETARY_SELENIUM] = HKSampleType.quantityType(forIdentifier: .dietarySelenium)!
+        
 
-            healthDataTypes = Array(dataTypesDict.values)
-        }
-        // Set up heart rate data types specific to the apple watch, requires iOS 12
-        if #available(iOS 12.2, *){
-            dataTypesDict[HIGH_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .highHeartRateEvent)!
-            dataTypesDict[LOW_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .lowHeartRateEvent)!
-            dataTypesDict[IRREGULAR_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .irregularHeartRhythmEvent)!
+        healthDataTypes = Array(dataTypesDict.values)
 
-            heartRateEventTypes =  Set([
-                HKSampleType.categoryType(forIdentifier: .highHeartRateEvent)!,
-                HKSampleType.categoryType(forIdentifier: .lowHeartRateEvent)!,
-                HKSampleType.categoryType(forIdentifier: .irregularHeartRhythmEvent)!,
-                ])
-        }
+        dataTypesDict[HIGH_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .highHeartRateEvent)!
+        dataTypesDict[LOW_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .lowHeartRateEvent)!
+        dataTypesDict[IRREGULAR_HEART_RATE_EVENT] = HKSampleType.categoryType(forIdentifier: .irregularHeartRhythmEvent)!
+
+        heartRateEventTypes =  Set([
+            HKSampleType.categoryType(forIdentifier: .highHeartRateEvent)!,
+            HKSampleType.categoryType(forIdentifier: .lowHeartRateEvent)!,
+            HKSampleType.categoryType(forIdentifier: .irregularHeartRhythmEvent)!,
+            ])
 
         // Concatenate heart events and health data types (both may be empty)
         allDataTypes = Set(heartRateEventTypes + healthDataTypes)
