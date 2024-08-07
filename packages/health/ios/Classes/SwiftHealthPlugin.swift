@@ -102,6 +102,12 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
             try! requestAuthorization(call: call, result: result)
         }
 
+        /// Handle requestAuthorizationStatus
+        else if (call.method.elementsEqual("requestAuthorizationStatus")){
+            try! requestAuthorizationStatus(call: call, result: result)
+        }
+
+
         /// Handle getData
         else if (call.method.elementsEqual("getData")){
             getData(call: call, result: result)
@@ -208,11 +214,53 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         }
 
         healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) { (success, error) in
+            if let err = error {
+                NSLog("Error requesting authorization: \(err.localizedDescription)")
+            }
             DispatchQueue.main.async {
                 result(success)
             }
         }
+    }
+    
+    func requestAuthorizationStatus(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
+        
+        guard let arguments = call.arguments as? NSDictionary,
+              let types = arguments["types"] as? Array<String>,
+              let permissions = arguments["permissions"] as? Array<Int>,
+              permissions.count == types.count
+        else {
+           throw PluginError(message: "Invalid Arguments!")
+        }
+        
+        
+        var typesToRead = Set<HKSampleType>()
+        var typesToWrite = Set<HKSampleType>()
+        for (index, key) in types.enumerated() {
+            guard let dataType = dataTypeLookUp(key: key) else {
+                continue
+            }
+            let access = permissions[index]
+            switch access {
+            case 0:
+                typesToRead.insert(dataType)
+            case 1:
+                typesToWrite.insert(dataType)
+            default:
+                typesToRead.insert(dataType)
+                typesToWrite.insert(dataType)
+            }
+        }
 
+        healthStore.getRequestStatusForAuthorization(toShare: typesToWrite, read: typesToRead) { (status, error) in
+            if let err = error {
+                NSLog("Error requesting authorization: \(err.localizedDescription)")
+            }
+            
+            DispatchQueue.main.async {
+                result(status.rawValue)
+            }
+        }
     }
     
     func writeFoodData(call: FlutterMethodCall, result: @escaping FlutterResult) throws {
@@ -421,7 +469,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         print("Successfully called writeData with value of \(value) and type of \(type)")
         
         guard let sampleType = dataTypeLookUp(key: type) else {
-                result(false)
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
         }
         
@@ -429,13 +479,17 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
       
         if (unitLookUp(key: type) == HKUnit.init(from: "")) {
             guard let categoryType = sampleType as? HKCategoryType else {
-                result(false)
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
             }
             sample = HKCategorySample(type: categoryType, value: Int(value), start: dateFrom, end: dateTo)
         } else {
             guard let quantityType = sampleType as? HKQuantityType else {
-                result(false)
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
             }
             let quantity = HKQuantity(unit: unitLookUp(key: type), doubleValue: value)
@@ -477,7 +531,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         print("Successfully called deleteData with type of \(type)")
         
         guard let sampleType = dataTypeLookUp(key: type) else {
-                result(false)
+                DispatchQueue.main.async {
+                    result(false)
+                }
                 return
         }
         
@@ -503,7 +559,9 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
 
         guard let dataType = dataTypeLookUp(key: dataTypeKey) else {
-            result(nil)
+            DispatchQueue.main.async {
+                result(nil)
+            }
             return
         }
         

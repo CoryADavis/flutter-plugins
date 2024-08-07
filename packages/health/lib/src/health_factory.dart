@@ -143,6 +143,51 @@ class HealthFactory {
     return isAuthorized ?? false;
   }
 
+  Future<int> requestAuthorizationStatus(
+    List<HealthDataType> types, {
+    List<HealthDataAccess>? permissions,
+  }) async {
+    if (permissions != null && permissions.length != types.length) {
+      throw ArgumentError('The length of [types] must be same as that of [permissions].');
+    }
+
+    if (_platformType != PlatformType.IOS) {
+      return 1;
+    }
+
+    List<HealthDataType> usableTypes = [];
+    List<HealthDataAccess>? usablePermissions = permissions == null ? null : [];
+
+    var platformDataTypeKeys = _dataTypeKeysIOS;
+
+    // Only use supplied types and permissions if they are valid for the current platform
+    for (var i = 0; i < types.length; i++) {
+      var typeToCheck = types[i];
+
+      if (platformDataTypeKeys.contains(typeToCheck)) {
+        usableTypes.add(typeToCheck);
+        if (permissions != null && usablePermissions != null) {
+          usablePermissions.add(permissions[i]);
+        }
+      }
+    }
+
+    if (usableTypes.isEmpty) {
+      return 1;
+    }
+
+    final mTypes = List<HealthDataType>.from(usableTypes, growable: true);
+    final mPermissions = usablePermissions == null
+        ? List<int>.filled(usableTypes.length, HealthDataAccess.READ.index, growable: true)
+        : usablePermissions.map((permission) => permission.index).toList();
+
+    List<String> keys = mTypes.map((e) => _enumToString(e)).toList();
+    final int? status =
+        await _channel.invokeMethod('requestAuthorizationStatus', {'types': keys, "permissions": mPermissions});
+    print('status: $status');
+    return status ?? 0;
+  }
+
   static void _handleBMI(List<HealthDataType> mTypes, List<int> mPermissions) {
     final index = mTypes.indexOf(HealthDataType.BODY_MASS_INDEX);
 
@@ -209,8 +254,7 @@ class HealthFactory {
   }) async {
     if (startTime == null) throw ArgumentError("startTime must be not null");
     if (endTime == null) throw ArgumentError("endTime must be not null");
-    if (startTime.isAfter(endTime))
-      throw ArgumentError("startTime must be equal or earlier than endTime");
+    if (startTime.isAfter(endTime)) throw ArgumentError("startTime must be equal or earlier than endTime");
 
     Map<String, dynamic> args = {
       'value': value,
