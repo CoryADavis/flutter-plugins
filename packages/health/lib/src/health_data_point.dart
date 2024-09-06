@@ -126,7 +126,9 @@ class HealthDataPoint {
         this.deviceId == o.deviceId &&
         this.sourceId == o.sourceId &&
         this.sourceName == o.sourceName;
-
+    if (!isSame) {
+      return false;
+    }
     // special check if both items have 'meal' or 'Meal' in their metadata
     bool mealTypeMatch = true;
     for (final String key in _metadata?.keys ?? []) {
