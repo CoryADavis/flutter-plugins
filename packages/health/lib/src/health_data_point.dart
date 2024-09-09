@@ -12,9 +12,20 @@ class HealthDataPoint {
   String _deviceId;
   String _sourceId;
   String _sourceName;
+  Map<String, dynamic>? _metadata;
 
-  HealthDataPoint(this._value, this._type, this._unit, this._dateFrom, this._dateTo, this._platform, this._deviceId,
-      this._sourceId, this._sourceName) {
+  HealthDataPoint(
+    this._value,
+    this._type,
+    this._unit,
+    this._dateFrom,
+    this._dateTo,
+    this._platform,
+    this._deviceId,
+    this._sourceId,
+    this._sourceName,
+    this._metadata,
+  ) {
     // set the value to minutes rather than the category
     // returned by the native API
     if (type == HealthDataType.MINDFULNESS ||
@@ -40,7 +51,8 @@ class HealthDataPoint {
       PlatformTypeJsonValue.keys.toList()[PlatformTypeJsonValue.values.toList().indexOf(json['platform_type'])],
       json['platform_type'],
       json['source_id'],
-      json['source_name']);
+      json['source_name'],
+      json['metadata']);
 
   /// Converts the [HealthDataPoint] to a json object
   Map<String, dynamic> toJson() => {
@@ -52,7 +64,8 @@ class HealthDataPoint {
         'platform_type': PlatformTypeJsonValue[platform],
         'device_id': deviceId,
         'source_id': sourceId,
-        'source_name': sourceName
+        'source_name': sourceName,
+        'metadata': _metadata
       };
 
   @override
@@ -101,8 +114,10 @@ class HealthDataPoint {
 
   @override
   bool operator ==(Object o) {
-    return o is HealthDataPoint &&
-        this.value == o.value &&
+    if (!(o is HealthDataPoint)) {
+      return false;
+    }
+    final isSame = this.value == o.value &&
         this.unit == o.unit &&
         this.dateFrom == o.dateFrom &&
         this.dateTo == o.dateTo &&
@@ -111,6 +126,21 @@ class HealthDataPoint {
         this.deviceId == o.deviceId &&
         this.sourceId == o.sourceId &&
         this.sourceName == o.sourceName;
+    if (!isSame) {
+      return false;
+    }
+    // special check if both items have 'meal' or 'Meal' in their metadata
+    bool mealTypeMatch = true;
+    for (final String key in _metadata?.keys ?? []) {
+      final keyLower = key.toLowerCase();
+      if (keyLower.contains('meal')) {
+        if (_metadata![key] != o._metadata![key]) {
+          mealTypeMatch = false;
+          break;
+        }
+      }
+    }
+    return isSame && mealTypeMatch;
   }
 
   @override

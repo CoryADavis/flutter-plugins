@@ -179,7 +179,7 @@ class HealthFactory {
     for (var i = 0; i < weights.length; i++) {
       final bmiValue = weights[i].value.toDouble() / (h * h);
       final x = HealthDataPoint(
-          bmiValue, dataType, unit, weights[i].dateFrom, weights[i].dateTo, _platformType, _deviceId!, '', '');
+          bmiValue, dataType, unit, weights[i].dateFrom, weights[i].dateTo, _platformType, _deviceId!, '', '', {});
 
       bmiHealthPoints.add(x);
     }
@@ -209,8 +209,7 @@ class HealthFactory {
   }) async {
     if (startTime == null) throw ArgumentError("startTime must be not null");
     if (endTime == null) throw ArgumentError("endTime must be not null");
-    if (startTime.isAfter(endTime))
-      throw ArgumentError("startTime must be equal or earlier than endTime");
+    if (startTime.isAfter(endTime)) throw ArgumentError("startTime must be equal or earlier than endTime");
 
     Map<String, dynamic> args = {
       'value': value,
@@ -346,6 +345,8 @@ class HealthFactory {
       final DateTime to = DateTime.fromMillisecondsSinceEpoch(e['date_to']);
       final String sourceId = e["source_id"];
       final String sourceName = e["source_name"];
+      final original = e["metadata"];
+      final Map<String, dynamic>? metadata = original == null ? null : Map<String, dynamic>.from(original);
       return HealthDataPoint(
         value,
         dataType,
@@ -356,6 +357,7 @@ class HealthFactory {
         device,
         sourceId,
         sourceName,
+        metadata,
       );
     }).toList();
 
