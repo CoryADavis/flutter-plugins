@@ -756,6 +756,54 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
 
     }
 
+    private fun getTotalStepsInInterval(call: MethodCall, result: Result) {
+        val start = call.argument<Long>("startDate")!!
+        val end = call.argument<Long>("endDate")!!
+
+        getAggregatedStepCount(start, end, result)
+    }
+
+    private fun getAggregatedStepCount(start: Long, end: Long, result: Result) {
+        val startInstant = Instant.ofEpochMilli(start)
+        val endInstant = Instant.ofEpochMilli(end)
+        val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+        scope.launch {
+            try {
+                val response =
+                    healthConnectClient.aggregate(
+                        AggregateRequest(
+                            metrics =
+                            setOf(
+                                StepsRecord.COUNT_TOTAL,
+                            ),
+                            timeRangeFilter =
+                            TimeRangeFilter.between(
+                                startInstant,
+                                endInstant
+                            ),
+                        ),
+                    )
+                // The result may be null if no data is available in the
+                // time range.
+                val stepsInInterval =
+                    response[StepsRecord.COUNT_TOTAL] ?: 0L
+
+                Log.i(
+                    "FLUTTER_HEALTH::SUCCESS",
+                    "returning $stepsInInterval steps"
+                )
+                result.success(stepsInInterval)
+            } catch (e: Exception) {
+                Log.e(
+                    "FLUTTER_HEALTH::ERROR",
+                    "Unable to return steps due to the following exception:"
+                )
+                Log.e("FLUTTER_HEALTH::ERROR", Log.getStackTraceString(e))
+                result.success(null)
+            }
+        }
+    }
+
     private suspend fun deleteHealthConnectDataByDateRange(call: MethodCall, result: Result) {
         if (activity == null) {
             result.success(false)
@@ -1001,6 +1049,7 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 "requestHealthConnectPermission" -> requestHealthConnectPermission(call, result)
                 "isHealthConnectAvailable" -> isHealthConnectAvailable(activityContext, call, result)
                 "deleteHealthConnectDataByDateRange" -> deleteHealthConnectDataByDateRange(call, result)
+                "getTotalStepsInInterval" -> getTotalStepsInInterval(call, result)
                 else -> result.notImplemented()
             }
         }
