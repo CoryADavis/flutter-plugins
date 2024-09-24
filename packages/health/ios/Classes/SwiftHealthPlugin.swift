@@ -572,32 +572,31 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
         let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
 
         let sampleType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        let predicate = HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: .strictStartDate)
+        let predicate = HKQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: [])
 
-        let query = HKStatisticsQuery(quantityType: sampleType,
+        let cal = Calendar(identifier: Calendar.Identifier.gregorian)
+        let newDate = cal.startOfDay(for: dateFrom)
+        var interval = DateComponents()
+        interval.day = 1
+
+        let query = HKStatisticsCollectionQuery(quantityType: sampleType,
             quantitySamplePredicate: predicate,
-            options: .cumulativeSum) { query, queryResult, error in
+            options: .cumulativeSum, anchorDate: newDate as Date, intervalComponents: interval)
 
-            guard let queryResult = queryResult else {
-                let error = error! as NSError
-                print("Error getting total steps in interval \(error.localizedDescription)")
-                
-                DispatchQueue.main.async {
-                    result(nil)
+        query.initialResultsHandler = { query, results, error in
+
+            if let myResults = results{
+                myResults.enumerateStatistics(from: newDate, to: dateTo) {
+                    statistics, stop in
+
+                    if let quantity = statistics.sumQuantity() {
+                        let steps = quantity.doubleValue(for: HKUnit.count())
+                        let totalSteps = Int(steps)
+                        DispatchQueue.main.async {
+                            result(totalSteps)
+                        }
+                    }
                 }
-                return
-            }
-
-            var steps = 0.0
-
-            if let quantity = queryResult.sumQuantity() {
-                let unit = HKUnit.count()
-                steps = quantity.doubleValue(for: unit)
-            }
-
-            let totalSteps = Int(steps)
-            DispatchQueue.main.async {
-                result(totalSteps)
             }
         }
 
