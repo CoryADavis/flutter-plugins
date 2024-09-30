@@ -3,6 +3,16 @@ import HealthKit
 
 extension SwiftHealthPlugin {
 
+  struct WriteDataInput {
+    let value: Double
+    let dataType: HealthDataTypes
+    let startDate: NSNumber
+    let endDate: NSNumber
+    let overwrite: Bool
+
+    ini
+  }
+
   func writeData(call: FlutterMethodCall, result: @escaping FlutterResult) {
     guard let arguments = call.arguments as? NSDictionary,
           let value = (arguments["value"] as? Double),
