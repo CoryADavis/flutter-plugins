@@ -54,8 +54,20 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       }
 
     case "deleteFoodData":
-      healthKitQueue.async { [self] in
-        deleteFoodData(call: call, result: result)
+      do {
+        let input = try DeleteFoodDataInput(call: call)
+        healthKitQueue.async { [self] in
+          deleteFoodData(input: input) { outcome in
+            DispatchQueue.main.async {
+              switch outcome {
+              case .success(let didSucceed): result(didSucceed)
+              case .failure(let error): result(error)
+              }
+            }
+          }
+        }
+      } catch {
+        result(error)
       }
 
     case "writeFoodData":

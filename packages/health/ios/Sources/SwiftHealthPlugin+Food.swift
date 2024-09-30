@@ -153,45 +153,43 @@ extension SwiftHealthPlugin {
     healthStore.execute(query)
   }
 
-  func deleteFoodData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard let arguments = call.arguments as? NSDictionary,
-          let startDate = (arguments["startTime"] as? NSNumber),
-          let endDate = (arguments["endTime"] as? NSNumber) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Invalid Arguments"))
-      }
-      return
-    }
+  struct DeleteFoodDataInput {
+    let startDate: Date
+    let endDate: Date
 
+    init(call: FlutterMethodCall) throws {
+      guard let arguments = call.arguments as? NSDictionary,
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber) else {
+        throw PluginError(message: "Invalid Arguments")
+      }
+      self.startDate = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+      self.endDate = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+    }
+  }
+
+  func deleteFoodData(input: DeleteFoodDataInput, result: @escaping (Result<Bool, PluginError>) -> Void) {
     logger.debug("\(#function)")
 
-    let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
-    let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
-
     guard let foodCorrelationType = HKCorrelationType.correlationType(forIdentifier: .food) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Failed to create HKCorrelationType for .food"))
-      }
+      result(.failure(PluginError(message: "Failed to create HKCorrelationType for .food")))
       return
     }
 
     let query = HKCorrelationQuery(
       type: foodCorrelationType,
-      predicate: HKCorrelationQuery.predicateForSamples(withStart: dateFrom, end: dateTo, options: []),
+      predicate: HKCorrelationQuery.predicateForSamples(withStart: input.startDate, end: input.endDate, options: []),
       samplePredicates: nil
     ) { query, results, error in
       if let error {
         logger.error("\(#function) query to prepare delete failed: \(error.localizedDescription)")
-        DispatchQueue.main.async {
-          result(false)
-        }
+        result(.success(false))
+        // TODO: - Is Dart ready to be forwarded these errors?
         return
       }
       guard let correlations = results else {
         logger.error("\(#function) nil results")
-        DispatchQueue.main.async {
-          result(false)
-        }
+        result(.success(false))
         return
       }
 
@@ -203,19 +201,16 @@ extension SwiftHealthPlugin {
       }
 
       if samplesToDelete.isEmpty {
-        DispatchQueue.main.async {
-          result(true)
-        }
+        result(.success(true))
         return
       }
 
       healthStore.delete(samplesToDelete) { (success, error) in
         if let error {
           logger.error("\(#function) deletion failed: \(error.localizedDescription)")
+          // TODO: - Is Dart ready to be forwarded these errors?
         }
-        DispatchQueue.main.async {
-          result(success)
-        }
+        result(.success(success))
       }
     }
 
