@@ -91,39 +91,48 @@ extension SwiftHealthPlugin {
     }
   }
 
-  func deleteData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard let arguments = call.arguments as? NSDictionary,
-          let type = (arguments["dataTypeKey"] as? String),
-          let startDate = (arguments["startTime"] as? NSNumber),
-          let endDate = (arguments["endTime"] as? NSNumber) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Invalid Arguments"))
-      }
-      return
-    }
-    guard let sampleType = HealthDataTypes(rawValue: type)?.sampleType else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "HealthDataType or HKSampleType for \(type)"))
-      }
-      return
-    }
+  struct DeleteDataInput {
+    let dataType: HealthDataTypes
+    let sampleType: HKSampleType
+    let startDate: Date
+    let endDate: Date
 
-    logger.debug("\(#function) \(type)")
+    init(call: FlutterMethodCall) throws {
+      guard let arguments = call.arguments as? NSDictionary,
+            let type = (arguments["dataTypeKey"] as? String),
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber) else {
+        throw PluginError(message: "Invalid Arguments")
+      }
+      guard let dataType = HealthDataTypes(rawValue: type) else {
+        throw PluginError(message: "HealthDataType for \(type)")
+      }
+      guard let sampleType = dataType.sampleType else {
+        throw PluginError(message: "HKSampleType for \(type)")
+      }
+      self.dataType = dataType
+      self.sampleType = sampleType
+      self.startDate = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+      self.endDate = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+    }
+  }
+
+  func deleteData(input: DeleteDataInput, result: @escaping (Result<Bool, PluginError>) -> Void) {
+    logger.debug("\(#function) \(input.dataType.rawValue)")
 
     healthStore.deleteObjects(
-      of: sampleType,
+      of: input.sampleType,
       predicate: HKQuery.predicateForSamples(
-        withStart: Date(timeIntervalSince1970: startDate.doubleValue / 1000),
-        end: Date(timeIntervalSince1970: endDate.doubleValue / 1000),
+        withStart: input.startDate,
+        end: input.endDate,
         options: []
       )
     ) { (success, _, error) in
       if let error {
-        logger.error("\(#function) failed to delete sample \(type): \(error.localizedDescription)")
+        // TODO: - Is Dart ready to be forwarded these errors?
+        logger.error("\(#function) failed to delete sample \(input.dataType.rawValue): \(error.localizedDescription)")
       }
-      DispatchQueue.main.async {
-        result(success)
-      }
+      result(.success(success))
     }
   }
 

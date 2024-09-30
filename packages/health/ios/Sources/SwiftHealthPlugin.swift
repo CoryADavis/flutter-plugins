@@ -37,8 +37,20 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
     // MARK: - These must swap back to main for result calls
 
     case "deleteData":
-      healthKitQueue.async { [self] in
-        deleteData(call: call, result: result)
+      do {
+        let input = try DeleteDataInput(call: call)
+        healthKitQueue.async { [self] in
+          deleteData(input: input) { outcome in
+            DispatchQueue.main.async {
+              switch outcome {
+              case .success(let didSucceed): result(didSucceed)
+              case .failure(let error): result(error)
+              }
+            }
+          }
+        }
+      } catch {
+        result(error)
       }
 
     case "deleteFoodData":
