@@ -1,82 +1,88 @@
+import Flutter
 import HealthKit
 
 extension SwiftHealthPlugin {
 
-  func writeData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard let arguments = call.arguments as? NSDictionary,
-          let value = (arguments["value"] as? Double),
-          let type = (arguments["dataTypeKey"] as? String),
-          let startDate = (arguments["startTime"] as? NSNumber),
-          let endDate = (arguments["endTime"] as? NSNumber),
-          let overwrite = (arguments["overwrite"] as? Bool) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Invalid Arguments"))
+  struct WriteDataInput {
+    let value: Double
+    let dataType: HealthDataTypes
+    let dateFrom: Date
+    let dateTo: Date
+    let overwrite: Bool
+
+    init(call: FlutterMethodCall) throws {
+      guard let arguments = call.arguments as? NSDictionary,
+            let value = (arguments["value"] as? Double),
+            let type = (arguments["dataTypeKey"] as? String),
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber),
+            let overwrite = (arguments["overwrite"] as? Bool) else {
+        throw PluginError(message: "Invalid Arguments")
       }
-      return
-    }
-    guard let dataType = HealthDataTypes(rawValue: type) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Unrecognized dataTypeKey \(type)"))
+      guard let dataType = HealthDataTypes(rawValue: type) else {
+        throw PluginError(message: "Unrecognized dataTypeKey \(type)")
       }
-      return
+      self.value = value
+      self.dataType = dataType
+      self.dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+      self.dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+      self.overwrite = overwrite
     }
+  }
 
-    logger.debug("\(#function) \(dataType.rawValue) \(value)")
+  func writeData(input: WriteDataInput, result: @escaping (Result<Bool, PluginError>) -> Void) {
+    logger.debug("\(#function) \(input.dataType.rawValue) \(input.value)")
 
-    let dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
-    let dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
-
-    let sample: HKObject? = if let unit = dataType.unit, let quantityType = dataType.quantityType {
+    let sample: HKObject? = if let unit = input.dataType.unit, let quantityType = input.dataType.quantityType {
       HKQuantitySample(
         type: quantityType,
-        quantity: HKQuantity(unit: unit, doubleValue: value),
-        start: dateFrom,
-        end: dateTo
+        quantity: HKQuantity(unit: unit, doubleValue: input.value),
+        start: input.dateFrom,
+        end: input.dateTo
       )
-    } else if let categoryType = dataType.categoryType {
+    } else if let categoryType = input.dataType.categoryType {
       HKCategorySample(
         type: categoryType,
-        value: Int(value),
-        start: dateFrom,
-        end: dateTo
+        value: Int(input.value),
+        start: input.dateFrom,
+        end: input.dateTo
       )
     } else {
       nil
     }
     guard let sample else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Failed to create HKObject for \(type)"))
-      }
+      result(.failure(PluginError(message: "Failed to create HKObject for \(input.dataType.rawValue)")))
       return
     }
 
     let saveOperation = {
       healthStore.save(sample) { (success, error) in
         if let error {
-          logger.error("\(#function) saving \(type) failed: \(error.localizedDescription)")
+          // TODO: - Is Dart ready to be forwarded these errors?
+          logger.error("\(#function) saving \(input.dataType.rawValue) failed: \(error.localizedDescription)")
         }
-        DispatchQueue.main.async {
-          result(success)
-        }
+        result(.success(success))
       }
     }
 
-    if overwrite {
-      guard let categoryType = dataType.categoryType else {
-        logger.error("\(#function) deleting \(type) failed: HKCategoryType could not be resolved")
+    if input.overwrite {
+      guard let categoryType = input.dataType.categoryType else {
+        logger.error("\(#function) deleting \(input.dataType.rawValue) failed: HKCategoryType could not be resolved")
+        // TODO: - Dart should get telemetry about this. Add a telemetry return stream.
         saveOperation()
         return
       }
       healthStore.deleteObjects(
         of: categoryType,
         predicate: HKQuery.predicateForSamples(
-          withStart: dateFrom,
-          end: dateTo,
+          withStart: input.dateFrom,
+          end: input.dateTo,
           options: []
         )
       ) { (_, _, error) in
         if let error {
-          logger.error("\(#function) deleting \(type) failed: \(error.localizedDescription)")
+          logger.error("\(#function) deleting \(input.dataType.rawValue) failed: \(error.localizedDescription)")
+          // TODO: - Dart should get telemetry about this. Add a telemetry return stream.
         }
         saveOperation()
       }
@@ -85,39 +91,48 @@ extension SwiftHealthPlugin {
     }
   }
 
-  func deleteData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    guard let arguments = call.arguments as? NSDictionary,
-          let type = (arguments["dataTypeKey"] as? String),
-          let startDate = (arguments["startTime"] as? NSNumber),
-          let endDate = (arguments["endTime"] as? NSNumber) else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "Invalid Arguments"))
-      }
-      return
-    }
-    guard let sampleType = HealthDataTypes(rawValue: type)?.sampleType else {
-      DispatchQueue.main.async {
-        result(PluginError(message: "HealthDataType or HKSampleType for \(type)"))
-      }
-      return
-    }
+  struct DeleteDataInput {
+    let dataType: HealthDataTypes
+    let sampleType: HKSampleType
+    let startDate: Date
+    let endDate: Date
 
-    logger.debug("\(#function) \(type)")
+    init(call: FlutterMethodCall) throws {
+      guard let arguments = call.arguments as? NSDictionary,
+            let type = (arguments["dataTypeKey"] as? String),
+            let startDate = (arguments["startTime"] as? NSNumber),
+            let endDate = (arguments["endTime"] as? NSNumber) else {
+        throw PluginError(message: "Invalid Arguments")
+      }
+      guard let dataType = HealthDataTypes(rawValue: type) else {
+        throw PluginError(message: "HealthDataType for \(type)")
+      }
+      guard let sampleType = dataType.sampleType else {
+        throw PluginError(message: "HKSampleType for \(type)")
+      }
+      self.dataType = dataType
+      self.sampleType = sampleType
+      self.startDate = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+      self.endDate = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+    }
+  }
+
+  func deleteData(input: DeleteDataInput, result: @escaping (Result<Bool, PluginError>) -> Void) {
+    logger.debug("\(#function) \(input.dataType.rawValue)")
 
     healthStore.deleteObjects(
-      of: sampleType,
+      of: input.sampleType,
       predicate: HKQuery.predicateForSamples(
-        withStart: Date(timeIntervalSince1970: startDate.doubleValue / 1000),
-        end: Date(timeIntervalSince1970: endDate.doubleValue / 1000),
+        withStart: input.startDate,
+        end: input.endDate,
         options: []
       )
     ) { (success, _, error) in
       if let error {
-        logger.error("\(#function) failed to delete sample \(type): \(error.localizedDescription)")
+        // TODO: - Is Dart ready to be forwarded these errors?
+        logger.error("\(#function) failed to delete sample \(input.dataType.rawValue): \(error.localizedDescription)")
       }
-      DispatchQueue.main.async {
-        result(success)
-      }
+      result(.success(success))
     }
   }
 
