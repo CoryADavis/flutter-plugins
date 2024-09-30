@@ -4,10 +4,6 @@ import HealthKit
 
 public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
 
-  struct PluginError: Error {
-    let message: String
-  }
-
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
       name: "flutter_health",
