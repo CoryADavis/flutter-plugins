@@ -12,7 +12,7 @@ Wrapper for the iOS HealthKit and Android GoogleFit services.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Copenhagen Center for Health Technology' => 'cph.cachet@gmail.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = ['Classes/**/*', 'Sources/**/*']
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
 
