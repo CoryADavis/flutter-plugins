@@ -52,8 +52,20 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       }
 
     case "writeData":
-      healthKitQueue.async { [self] in
-        writeData(call: call, result: result)
+      do {
+        let input = try WriteDataInput(call: call)
+        healthKitQueue.async { [self] in
+          writeData(input: input) { outcome in
+            DispatchQueue.main.async {
+              switch outcome {
+              case .success(let didSucceed): result(didSucceed)
+              case .failure(let error): result(error)
+              }
+            }
+          }
+        }
+      } catch {
+        result(error)
       }
 
     default:
