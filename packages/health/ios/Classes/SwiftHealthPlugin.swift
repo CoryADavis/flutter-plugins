@@ -595,7 +595,15 @@ public class SwiftHealthPlugin: NSObject, FlutterPlugin {
                         DispatchQueue.main.async {
                             result(totalSteps)
                         }
+                    } else {
+                        DispatchQueue.main.async {
+                            result(0)
+                        }
                     }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    result(0)
                 }
             }
         }
