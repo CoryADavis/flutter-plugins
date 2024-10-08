@@ -136,125 +136,148 @@ extension SwiftHealthPlugin {
     }
   }
 
-  func getData(call: FlutterMethodCall, result: @escaping FlutterResult) {
-    let arguments = call.arguments as? NSDictionary
-    let dataTypeKey = (arguments?["dataTypeKey"] as? String) ?? "DEFAULT"
-    let startDate = (arguments?["startDate"] as? NSNumber) ?? 0
-    let endDate = (arguments?["endDate"] as? NSNumber) ?? 0
-    let limit = (arguments?["limit"] as? Int) ?? HKObjectQueryNoLimit
+  struct GetDataInput {
+    let type: HealthDataTypes
+    let sampleType: HKSampleType
+    let unit: HKUnit
+    let dateFrom: Date
+    let dateTo: Date
+    let limit: Int
 
-    guard let type = HealthDataTypes(rawValue: dataTypeKey) else {
-      result(PluginError(message: "Unrecognized \(dataTypeKey)"))
-      return
+    init(call: FlutterMethodCall) throws {
+      guard let arguments = call.arguments as? NSDictionary,
+            let dataTypeKey = (arguments["dataTypeKey"] as? String) else {
+        throw PluginError(message: "Invalid Arguments")
+      }
+      guard let type = HealthDataTypes(rawValue: dataTypeKey) else {
+        throw PluginError(message: "Unrecognized \(dataTypeKey)")
+      }
+      guard let sampleType = type.sampleType else {
+        throw PluginError(message: "Failed to resolve HKSampleType for \(dataTypeKey)")
+      }
+      guard let unit = type.unit else {
+        throw PluginError(message: "Failed to resolve HKUnit for \(dataTypeKey)")
+      }
+      self.type = type
+      self.sampleType = sampleType
+      self.unit = unit
+      let startDate = (arguments["startDate"] as? NSNumber) ?? 0
+      let endDate = (arguments["endDate"] as? NSNumber) ?? 0
+      self.dateFrom = Date(timeIntervalSince1970: startDate.doubleValue / 1000)
+      self.dateTo = Date(timeIntervalSince1970: endDate.doubleValue / 1000)
+      self.limit = (arguments["limit"] as? Int) ?? HKObjectQueryNoLimit
     }
-    guard let sampleType = type.sampleType else {
-      result(PluginError(message: "Failed to resolve HKSampleType for \(dataTypeKey)"))
-      return
-    }
-    guard let unit = type.unit else {
-      result(PluginError(message: "Failed to resolve HKUnit for \(dataTypeKey)"))
-      return
-    }
+  }
 
+  func getData(input: GetDataInput, onCompletion: @escaping (Result<[[String: Any]], PluginError>) -> Void) {
     let predicate = HKQuery.predicateForSamples(
-      withStart: Date(timeIntervalSince1970: startDate.doubleValue / 1000),
-      end: Date(timeIntervalSince1970: endDate.doubleValue / 1000),
+      withStart: input.dateFrom,
+      end: input.dateTo,
       options: .strictStartDate
     )
     let sort = NSSortDescriptor(
       key: HKSampleSortIdentifierEndDate,
       ascending: false
     )
-
     let query =  HKSampleQuery(
-      sampleType: sampleType,
+      sampleType: input.sampleType,
       predicate: predicate,
-      limit: limit,
-      sortDescriptors: [sort]
-    ) { _, samples, error in
-
-      if let error {
-        logger.error("\(#function) query failed: \(error.localizedDescription)")
-        DispatchQueue.main.async {
-          result(nil)
+      limit: input.limit,
+      sortDescriptors: [sort],
+      resultsHandler: { _, samples, error in
+        if let error {
+          logger.error("\(#function) query failed: \(error.localizedDescription)")
+          onCompletion(.failure(PluginError(message: error.localizedDescription)))
+          return
         }
-        return
+        guard let samples else {
+          onCompletion(.success([]))
+          return
+        }
+        Self.parseGetDataQueryResults(
+          type: input.type,
+          unit: input.unit,
+          samples: samples,
+          onCompletion: onCompletion
+        )
       }
+    )
+    healthStore.execute(query)
+  }
 
-      guard let samples else {
-        DispatchQueue.main.async {
-          result(nil)
-        }
-        return
+  private static func parseGetDataQueryResults(
+    type: HealthDataTypes,
+    unit: HKUnit,
+    samples: [HKSample],
+    onCompletion: @escaping (Result<[[String: Any]], PluginError>) -> Void
+  ) {
+    if let samples = samples as? [HKQuantitySample] {
+      let dictionaries = samples.map { sample -> [String: Any] in
+        let metadata = sample.metadata?.reduce(into: [String: Any](), { dict, element in
+          if let value = element.value as? NSString {
+            dict[element.key] = String(value)
+          } else if let value = element.value as? NSNumber {
+            dict[element.key] = value.doubleValue
+          } else if let value = element.value as? NSDate {
+            dict[element.key] = value.timeIntervalSince1970 * 1000
+          } else {
+            logger.error("\(#function) Unexpected metadata type for \(type.rawValue) \(element.key)")
+          }
+        })
+        return [
+          "uuid": "\(sample.uuid.uuidString)",
+          "value": sample.quantity.doubleValue(for: unit),
+          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
+          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "source_id": sample.sourceRevision.source.bundleIdentifier,
+          "source_name": sample.sourceRevision.source.name,
+          "metadata": metadata ?? [:],
+        ]
       }
-
-      if let samples = samples as? [HKQuantitySample] {
-        let dictionaries = samples.map { sample -> NSDictionary in
-          return [
-            "uuid": "\(sample.uuid)",
-            "value": sample.quantity.doubleValue(for: unit),
-            "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-            "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
-            "source_id": sample.sourceRevision.source.bundleIdentifier,
-            "source_name": sample.sourceRevision.source.name,
-            "metadata": sample.metadata ?? [:],
-          ]
-        }
-        DispatchQueue.main.async { [dictionaries] in
-          result(dictionaries)
-        }
-        return
-      }
-
-      if var samples = samples as? [HKCategorySample] {
-        if type == .SLEEP_IN_BED {
-          samples = samples.filter { $0.value == 0 }
-        }
-        if type == .SLEEP_AWAKE {
-          samples = samples.filter { $0.value == 2 }
-        }
-        if type == .SLEEP_ASLEEP {
-          samples = samples.filter { $0.value == 1 }
-        }
-        let categories = samples.map { sample -> NSDictionary in
-          return [
-            "uuid": "\(sample.uuid)",
-            "value": sample.value,
-            "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-            "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
-            "source_id": sample.sourceRevision.source.bundleIdentifier,
-            "source_name": sample.sourceRevision.source.name
-          ]
-        }
-        DispatchQueue.main.async {
-          result(categories)
-        }
-        return
-      }
-
-      if let samples = samples as? [HKWorkout] {
-        let dictionaries = samples.map { sample -> NSDictionary in
-          return [
-            "uuid": "\(sample.uuid)",
-            "value": Int(sample.duration),
-            "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-            "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
-            "source_id": sample.sourceRevision.source.bundleIdentifier,
-            "source_name": sample.sourceRevision.source.name
-          ]
-        }
-        DispatchQueue.main.async {
-          result(dictionaries)
-        }
-        return
-      }
-
-      logger.error("\(#function) Unexpectedly did not find an expected query result")
-      DispatchQueue.main.async {
-        result(nil)
-      }
+      onCompletion(.success(dictionaries))
+      return
     }
 
-    healthStore.execute(query)
+    if var samples = samples as? [HKCategorySample] {
+      if type == .SLEEP_IN_BED {
+        samples = samples.filter { $0.value == 0 }
+      }
+      if type == .SLEEP_AWAKE {
+        samples = samples.filter { $0.value == 2 }
+      }
+      if type == .SLEEP_ASLEEP {
+        samples = samples.filter { $0.value == 1 }
+      }
+      let dictionaries = samples.map { sample -> [String: Any] in
+        return [
+          "uuid": "\(sample.uuid.uuidString)",
+          "value": sample.value,
+          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
+          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "source_id": sample.sourceRevision.source.bundleIdentifier,
+          "source_name": sample.sourceRevision.source.name
+        ]
+      }
+      onCompletion(.success(dictionaries))
+      return
+    }
+
+    if let samples = samples as? [HKWorkout] {
+      let dictionaries = samples.map { sample -> [String: Any] in
+        return [
+          "uuid": "\(sample.uuid.uuidString)",
+          "value": Int(sample.duration),
+          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
+          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "source_id": sample.sourceRevision.source.bundleIdentifier,
+          "source_name": sample.sourceRevision.source.name
+        ]
+      }
+      onCompletion(.success(dictionaries))
+      return
+    }
+
+    logger.error("\(#function) Unexpected query result type for \(type.rawValue)")
+    onCompletion(.failure(PluginError(message: "Unexpected query result type for \(type.rawValue)")))
   }
 }
