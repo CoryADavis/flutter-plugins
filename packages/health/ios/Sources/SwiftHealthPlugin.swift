@@ -32,7 +32,26 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       getTotalStepsInInterval(call: call, result: result)
 
     case "getData":
-      getData(call: call, result: result)
+      do {
+        let input = try GetDataInput(call: call)
+        getData(input: input) { completion in
+          if Thread.isMainThread {
+            switch completion {
+            case .failure(let failure): result(failure)
+            case .success(let success): result(success)
+            }
+          } else {
+            DispatchQueue.main.async {
+              switch completion {
+              case .failure(let failure): result(failure)
+              case .success(let success): result(success)
+              }
+            }
+          }
+        }
+      } catch {
+        result(error)
+      }
 
     // MARK: - These must swap back to main for result calls
 
