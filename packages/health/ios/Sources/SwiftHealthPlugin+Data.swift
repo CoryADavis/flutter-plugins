@@ -231,7 +231,7 @@ extension SwiftHealthPlugin {
           "date_to": NSNumber(integerLiteral: Int(sample.endDate.timeIntervalSince1970 * 1000)),
           "source_id": sample.sourceRevision.source.bundleIdentifier,
           "source_name": sample.sourceRevision.source.name,
-          "metadata": metadata ?? [:],
+          "metadata": metadata ?? NSNull(),
         ]
       }
       onCompletion(.success(dictionaries))
