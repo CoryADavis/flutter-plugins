@@ -217,21 +217,21 @@ extension SwiftHealthPlugin {
           if let value = element.value as? NSString {
             dict[element.key] = String(value)
           } else if let value = element.value as? NSNumber {
-            dict[element.key] = value.doubleValue
+            dict[element.key] = value
           } else if let value = element.value as? NSDate {
-            dict[element.key] = value.timeIntervalSince1970 * 1000
+            dict[element.key] = NSNumber(integerLiteral: Int(value.timeIntervalSince1970 * 1000))
           } else {
             logger.error("\(#function) Unexpected metadata type for \(type.rawValue) \(element.key)")
           }
         })
         return [
           "uuid": "\(sample.uuid.uuidString)",
-          "value": sample.quantity.doubleValue(for: unit),
-          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "value": NSNumber(floatLiteral: sample.quantity.doubleValue(for: unit)),
+          "date_from": NSNumber(integerLiteral: Int(sample.startDate.timeIntervalSince1970 * 1000)),
+          "date_to": NSNumber(integerLiteral: Int(sample.endDate.timeIntervalSince1970 * 1000)),
           "source_id": sample.sourceRevision.source.bundleIdentifier,
           "source_name": sample.sourceRevision.source.name,
-          "metadata": metadata ?? [:],
+          "metadata": metadata ?? NSNull(),
         ]
       }
       onCompletion(.success(dictionaries))
@@ -251,9 +251,9 @@ extension SwiftHealthPlugin {
       let dictionaries = samples.map { sample -> [String: Any] in
         return [
           "uuid": "\(sample.uuid.uuidString)",
-          "value": sample.value,
-          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "value": NSNumber(integerLiteral: sample.value),
+          "date_from": NSNumber(integerLiteral: Int(sample.startDate.timeIntervalSince1970 * 1000)),
+          "date_to": NSNumber(integerLiteral: Int(sample.endDate.timeIntervalSince1970 * 1000)),
           "source_id": sample.sourceRevision.source.bundleIdentifier,
           "source_name": sample.sourceRevision.source.name
         ]
@@ -266,9 +266,9 @@ extension SwiftHealthPlugin {
       let dictionaries = samples.map { sample -> [String: Any] in
         return [
           "uuid": "\(sample.uuid.uuidString)",
-          "value": Int(sample.duration),
-          "date_from": Int(sample.startDate.timeIntervalSince1970 * 1000),
-          "date_to": Int(sample.endDate.timeIntervalSince1970 * 1000),
+          "value": NSNumber(integerLiteral: Int(sample.duration)),
+          "date_from": NSNumber(integerLiteral: Int(sample.startDate.timeIntervalSince1970 * 1000)),
+          "date_to": NSNumber(integerLiteral: Int(sample.endDate.timeIntervalSince1970 * 1000)),
           "source_id": sample.sourceRevision.source.bundleIdentifier,
           "source_name": sample.sourceRevision.source.name
         ]

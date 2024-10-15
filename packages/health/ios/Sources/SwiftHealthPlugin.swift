@@ -35,16 +35,22 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       do {
         let input = try GetDataInput(call: call)
         getData(input: input) { completion in
-          if Thread.isMainThread {
-            switch completion {
-            case .failure(let failure): result(failure)
-            case .success(let success): result(success)
+          switch completion {
+          case .failure(let failure):
+            if Thread.isMainThread {
+              result(failure)
+            } else {
+              DispatchQueue.main.async { [failure] in
+                result(failure)
+              }
             }
-          } else {
-            DispatchQueue.main.async {
-              switch completion {
-              case .failure(let failure): result(failure)
-              case .success(let success): result(success)
+
+          case .success(let success):
+            if Thread.isMainThread {
+              result(success)
+            } else {
+              DispatchQueue.main.async { [success] in
+                result(success)
               }
             }
           }
