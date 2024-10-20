@@ -36,12 +36,17 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
         let input = try GetDataInput(call: call)
         getData(input: input) { completion in
           switch completion {
-          case .failure(let failure):
+          case .failure(let error):
+            let error = FlutterError(
+              code: "health",
+              message: error.localizedDescription,
+              details: nil
+            )
             if Thread.isMainThread {
-              result(failure)
+              result(error)
             } else {
-              DispatchQueue.main.async { [failure] in
-                result(failure)
+              DispatchQueue.main.async { [error] in
+                result(error)
               }
             }
 
@@ -56,6 +61,11 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           }
         }
       } catch {
+        let error = FlutterError(
+          code: "health-input",
+          message: error.localizedDescription,
+          details: nil
+        )
         result(error)
       }
 
@@ -68,13 +78,25 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           deleteData(input: input) { outcome in
             DispatchQueue.main.async {
               switch outcome {
-              case .success(let didSucceed): result(didSucceed)
-              case .failure(let error): result(error)
+              case .success(let didSucceed):
+                result(didSucceed)
+              case .failure(let error):
+                let error = FlutterError(
+                  code: "health",
+                  message: error.localizedDescription,
+                  details: nil
+                )
+                result(error)
               }
             }
           }
         }
       } catch {
+        let error = FlutterError(
+          code: "health-input",
+          message: error.localizedDescription,
+          details: nil
+        )
         result(error)
       }
 
@@ -85,13 +107,25 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           deleteFoodData(input: input) { outcome in
             DispatchQueue.main.async {
               switch outcome {
-              case .success(let didSucceed): result(didSucceed)
-              case .failure(let error): result(error)
+              case .success(let didSucceed):
+                result(didSucceed)
+              case .failure(let error):
+                let error = FlutterError(
+                  code: "health",
+                  message: error.localizedDescription,
+                  details: nil
+                )
+                result(error)
               }
             }
           }
         }
       } catch {
+        let error = FlutterError(
+          code: "health-input",
+          message: error.localizedDescription,
+          details: nil
+        )
         result(error)
       }
 
@@ -102,13 +136,25 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           writeFoodData(input: input) { outcome in
             DispatchQueue.main.async {
               switch outcome {
-              case .success(let didSucceed): result(didSucceed)
-              case .failure(let error): result(error)
+              case .success(let didSucceed):
+                result(didSucceed)
+              case .failure(let error):
+                let error = FlutterError(
+                  code: "health",
+                  message: error.localizedDescription,
+                  details: nil
+                )
+                result(error)
               }
             }
           }
         }
       } catch {
+        let error = FlutterError(
+          code: "health-input",
+          message: error.localizedDescription,
+          details: nil
+        )
         result(error)
       }
 
@@ -119,13 +165,25 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           writeData(input: input) { outcome in
             DispatchQueue.main.async {
               switch outcome {
-              case .success(let didSucceed): result(didSucceed)
-              case .failure(let error): result(error)
+              case .success(let didSucceed):
+                result(didSucceed)
+              case .failure(let error):
+                let error = FlutterError(
+                  code: "health",
+                  message: error.localizedDescription,
+                  details: nil
+                )
+                result(error)
               }
             }
           }
         }
       } catch {
+        let error = FlutterError(
+          code: "health-input",
+          message: error.localizedDescription,
+          details: nil
+        )
         result(error)
       }
 
