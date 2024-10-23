@@ -170,6 +170,9 @@ extension SwiftHealthPlugin {
   }
 
   func getData(input: GetDataInput, onCompletion: @escaping (Result<[[String: Any]], PluginError>) -> Void) {
+    if healthStore.authorizationStatus(for: input.sampleType) != .sharingAuthorized {
+      onCompletion(.success([]))
+    }
     let predicate = HKQuery.predicateForSamples(
       withStart: input.dateFrom,
       end: input.dateTo,
