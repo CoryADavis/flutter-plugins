@@ -44,13 +44,16 @@ extension SwiftHealthPlugin {
       guard let queryResult else {
         logger.warning("\(#function) query returned nil without error")
         DispatchQueue.main.async {
-          result(nil)
+          result(0)
         }
         return
       }
 
       queryResult.enumerateStatistics(from: startDateStartOfDay, to: endTime) { statistics, stop in
         guard let quantity = statistics.sumQuantity() else {
+          DispatchQueue.main.async {
+            result(0)
+          }
           return
         }
         let steps = quantity.doubleValue(for: HKUnit.count())
