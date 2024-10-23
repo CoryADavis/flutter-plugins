@@ -15,7 +15,9 @@ import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.HydrationRecord
+import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.metadata.DataOrigin
+import androidx.health.connect.client.request.AggregateRequest
 
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -32,6 +34,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -55,11 +58,14 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
     private var WEIGHT = "WEIGHT"
     private var NUTRITION = "NUTRITION"
     private var WATER = "WATER"
+    private var STEPS = "STEPS"
+    private lateinit var scope: CoroutineScope
 
     // The scope for the UI thread
     private val mainScope = CoroutineScope(Dispatchers.Main)
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, CHANNEL_NAME)
         channel?.setMethodCallHandler(this)
     }
@@ -457,41 +463,41 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                     result.success(false)
                 }
             }
-             WATER -> {
-                 val request = ReadRecordsRequest(
-                     recordType = HydrationRecord::class,
-                     timeRangeFilter = TimeRangeFilter.between(
-                         startDateObject.toInstant(),
-                         endDateObject.toInstant()
-                     )
-                 )
-                 try {
-                     val response = healthConnectClient.readRecords(request)
-                     val dataList: List<HydrationRecord> = response.records
+            WATER -> {
+                val request = ReadRecordsRequest(
+                    recordType = HydrationRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                        startDateObject.toInstant(),
+                        endDateObject.toInstant()
+                    )
+                )
+                try {
+                    val response = healthConnectClient.readRecords(request)
+                    val dataList: List<HydrationRecord> = response.records
 
-                     val healthData = dataList.mapIndexed { _, it ->
-                         val startZonedDateTime =
-                             dateTimeWithOffsetOrDefault(it.startTime, it.startZoneOffset)
-                         val endZonedDateTime =
-                             dateTimeWithOffsetOrDefault(it.endTime, it.endZoneOffset)
-                         val uid = it.metadata.id
-                         val packageName: String = it.metadata.dataOrigin.packageName
-                         val volume = it.volume.inMilliliters
-                         return@mapIndexed hashMapOf(
-                             "startDateTime" to startZonedDateTime.toInstant().toEpochMilli(),
-                             "endDateTime" to endZonedDateTime.toInstant().toEpochMilli(),
-                             "uid" to uid,
-                             "packageName" to packageName,
-                             "volume" to volume
-                         )
-                     }
-                     result.success(healthData)
-                 } catch (e: Exception) {
-                     Log.e("FLUTTER_HEALTH", e.message, null)
-                     result.success(false)
-                 }
+                    val healthData = dataList.mapIndexed { _, it ->
+                        val startZonedDateTime =
+                            dateTimeWithOffsetOrDefault(it.startTime, it.startZoneOffset)
+                        val endZonedDateTime =
+                            dateTimeWithOffsetOrDefault(it.endTime, it.endZoneOffset)
+                        val uid = it.metadata.id
+                        val packageName: String = it.metadata.dataOrigin.packageName
+                        val volume = it.volume.inMilliliters
+                        return@mapIndexed hashMapOf(
+                            "startDateTime" to startZonedDateTime.toInstant().toEpochMilli(),
+                            "endDateTime" to endZonedDateTime.toInstant().toEpochMilli(),
+                            "uid" to uid,
+                            "packageName" to packageName,
+                            "volume" to volume
+                        )
+                    }
+                    result.success(healthData)
+                } catch (e: Exception) {
+                    Log.e("FLUTTER_HEALTH", e.message, null)
+                    result.success(false)
+                }
 
-             }
+            }
             NUTRITION -> {
                 val request = ReadRecordsRequest(
                     recordType = NutritionRecord::class,
@@ -662,9 +668,56 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                     result.success(false)
                 }
             }
+            STEPS -> {
+                getStepsHealthConnect(startDateObject.toInstant().toEpochMilli(), endDateObject.toInstant().toEpochMilli(), result)
+            }
         }
     }
+    private fun getStepsHealthConnect(start: Long, end: Long, result: Result) =
+        scope.launch {
+                val healthConnectClient = HealthConnectClient.getOrCreate(activity!!.applicationContext)
+                val startInstant = Instant.ofEpochMilli(start)
+                val endInstant = Instant.ofEpochMilli(end)
+                val request = ReadRecordsRequest(
+                    recordType = StepsRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                        startInstant,
+                        endInstant
+                    ),
+                )
+                try {
+                val response = healthConnectClient.readRecords(request)
+                val dataList: List<StepsRecord> = response.records
+                val healthData = dataList.mapIndexed { _, it ->
+                    // The result may be null if no data is available in the
+                    // time range.
+                    val stepsInInterval = it.count
+                    Log.i(
+                        "FLUTTER_HEALTH::SUCCESS",
+                        "returning $stepsInInterval steps"
+                    )
+                    val startZonedDateTime =
+                        dateTimeWithOffsetOrDefault(it.startTime, it.startZoneOffset)
+                    val endZonedDateTime =
+                        dateTimeWithOffsetOrDefault(it.endTime, it.endZoneOffset)
+                    val uid = it.metadata.id
+                    val packageName: String = it.metadata.dataOrigin.packageName
+                    val hashMapData = hashMapOf<String, Any>(
+                        "startDateTime" to startZonedDateTime.toInstant().toEpochMilli(),
+                        "endDateTime" to endZonedDateTime.toInstant().toEpochMilli(),
+                        "uid" to uid,
+                        "packageName" to packageName,
+                        "steps" to stepsInInterval
+                    )
 
+                    return@mapIndexed hashMapData
+                }
+                result.success(healthData)
+                } catch (e: Exception) {
+                    Log.i("FLUTTER_HEALTH::ERROR", "unable to return steps")
+                    result.success(null)
+                }
+        }
     private suspend fun deleteHealthConnectData(call: MethodCall, result: Result) {
         if (activity == null) {
             result.success(false)
@@ -807,6 +860,9 @@ class HealthPlugin(private var channel: MethodChannel? = null) : MethodCallHandl
                 }
                 WATER -> {
                     HydrationRecord::class
+                }
+                STEPS -> {
+                    StepsRecord::class
                 }
                 else -> throw IllegalArgumentException("Unknown access type $access")
             }
