@@ -18,3 +18,15 @@ public struct FlutterMethodCall: Sendable {
 }
 public typealias FlutterResult = (Any?) -> Void
 public let FlutterMethodNotImplemented: FlutterResult = { _ in  }
+
+public struct FlutterError {
+  public let code: String
+  public let message: String
+  public let details: String?
+
+  public init(code: String, message: String, details: String?) {
+    self.code = code
+    self.message = message
+    self.details = details
+  }
+}
