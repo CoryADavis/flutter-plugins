@@ -4,8 +4,11 @@ import HealthKit
 extension SwiftHealthPlugin {
   func getTotalStepsInInterval(call: FlutterMethodCall, result: @escaping FlutterResult) {
     let arguments = call.arguments as? NSDictionary
-    let startDate = (arguments?["startDate"] as? NSNumber) ?? 0
-    let endDate = (arguments?["endDate"] as? NSNumber) ?? 0
+    let startEpoch = (arguments?["startDate"] as? NSNumber) ?? 0
+    let startTime = Date(timeIntervalSince1970: startEpoch.doubleValue / 1000)
+    let startDateStartOfDay = Calendar(identifier: .gregorian).startOfDay(for: startTime)
+    let endEpoch = (arguments?["endDate"] as? NSNumber) ?? 0
+    let endTime = Date(timeIntervalSince1970: endEpoch.doubleValue / 1000)
 
     guard let sampleType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
       result(PluginError(message: "Failed to create HKQuantityType.stepCount"))
@@ -17,16 +20,19 @@ extension SwiftHealthPlugin {
       return
     }
 
-    let query = HKStatisticsQuery(
+    let query = HKStatisticsCollectionQuery(
       quantityType: sampleType,
       quantitySamplePredicate: HKQuery.predicateForSamples(
-        withStart: Date(timeIntervalSince1970: startDate.doubleValue / 1000),
-        end: Date(timeIntervalSince1970: endDate.doubleValue / 1000),
-        options: .strictStartDate
+        withStart: startTime,
+        end: endTime,
+        options: []
       ),
-      options: .cumulativeSum
-    ) { query, queryResult, error in
+      options: [.cumulativeSum],
+      anchorDate: startDateStartOfDay,
+      intervalComponents: DateComponents(day: 1)
+    )
 
+    query.initialResultsHandler = { query, queryResult, error in
       if let error {
         logger.error("\(#function) query failed: \(error.localizedDescription)")
         DispatchQueue.main.async {
@@ -34,7 +40,7 @@ extension SwiftHealthPlugin {
         }
         return
       }
-
+      
       guard let queryResult else {
         logger.warning("\(#function) query returned nil without error")
         DispatchQueue.main.async {
@@ -43,9 +49,14 @@ extension SwiftHealthPlugin {
         return
       }
 
-      let steps = queryResult.sumQuantity()?.doubleValue(for: HKUnit.count()) ?? 0
-      DispatchQueue.main.async {
-        result(Int(steps))
+      queryResult.enumerateStatistics(from: startDateStartOfDay, to: endTime) { statistics, stop in
+        guard let quantity = statistics.sumQuantity() else {
+          return
+        }
+        let steps = quantity.doubleValue(for: HKUnit.count())
+        DispatchQueue.main.async {
+          result(Int(steps))
+        }
       }
     }
 
