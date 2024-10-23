@@ -20,18 +20,30 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
     switch call.method {
 
     case "hasPermissions":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       hasPermissions(call: call, result: result)
 
     case "checkIfHealthDataAvailable":
       checkIfHealthDataAvailable(call: call, result: result)
 
     case "requestAuthorization":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       requestAuthorization(call: call, result: result)
 
     case "getTotalStepsInInterval":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(nil)
+      }
       getTotalStepsInInterval(call: call, result: result)
 
     case "getData":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result([])
+      }
       do {
         let input = try GetDataInput(call: call)
         getData(input: input) { completion in
@@ -72,6 +84,9 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
     // MARK: - These must swap back to main for result calls
 
     case "deleteData":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       do {
         let input = try DeleteDataInput(call: call)
         healthKitQueue.async { [self] in
@@ -101,6 +116,9 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       }
 
     case "deleteFoodData":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       do {
         let input = try DeleteFoodDataInput(call: call)
         healthKitQueue.async { [self] in
@@ -130,6 +148,9 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       }
 
     case "writeFoodData":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       do {
         let input = try WriteFoodDataInput(call: call)
         healthKitQueue.async { [self] in
@@ -159,6 +180,9 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       }
 
     case "writeData":
+      if HKHealthStore.isHealthDataAvailable() == false {
+        result(false)
+      }
       do {
         let input = try WriteDataInput(call: call)
         healthKitQueue.async { [self] in
