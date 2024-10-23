@@ -12,6 +12,11 @@ extension SwiftHealthPlugin {
       return
     }
 
+    guard healthStore.authorizationStatus(for: sampleType) == .sharingAuthorized else {
+      result(nil)
+      return
+    }
+
     let query = HKStatisticsQuery(
       quantityType: sampleType,
       quantitySamplePredicate: HKQuery.predicateForSamples(
