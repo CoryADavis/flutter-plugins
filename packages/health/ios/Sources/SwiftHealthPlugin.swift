@@ -38,7 +38,16 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
       if HKHealthStore.isHealthDataAvailable() == false {
         result(nil)
       }
-      getTotalStepsInInterval(call: call, result: result)
+      getTotalStepsInInterval(call: call) { outcome in
+        DispatchQueue.main.async {
+          switch outcome {
+          case .success(let steps):
+            result(steps)
+          case .failure(let error):
+            result(error)
+          }
+        }
+      }
 
     case "getData":
       if HKHealthStore.isHealthDataAvailable() == false {
