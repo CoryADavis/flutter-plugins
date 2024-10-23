@@ -44,6 +44,11 @@ public final class SwiftHealthPlugin: NSObject, FlutterPlugin, Sendable {
           case .success(let steps):
             result(steps)
           case .failure(let error):
+            let error = FlutterError(
+              code: "health-steps",
+              message: error.localizedDescription,
+              details: nil
+            )
             result(error)
           }
         }
